@@ -1,0 +1,13 @@
+﻿using Repositories.Entities;
+
+namespace Repositories.Interfaces;
+
+public interface IAccountRepository : IGenericRepository<Account>
+{
+    #region Authentication
+
+    Task<Account?> FindByEmailAsync(string email);
+    Task<Account?> FindByUsernameAsync(string username);
+
+    #endregion
+}
