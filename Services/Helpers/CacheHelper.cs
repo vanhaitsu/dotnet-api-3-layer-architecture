@@ -19,16 +19,16 @@ public class CacheHelper : ICacheHelper
         _distributedCache = distributedCache;
         _connectionMultiplexer = connectionMultiplexer;
         _configuration = configuration;
-        Enable = bool.Parse(_configuration["Redis:Enable"] ?? "false");
+        IsEnabled = bool.Parse(_configuration["Redis:IsEnabled"] ?? "false");
     }
 
-    private bool Enable { get; }
+    private bool IsEnabled { get; }
 
     public async Task<T> GetOrSetAsync<T>(string cacheKey, Func<Task<T>> getData,
         TimeSpan? absoluteExpiration = default,
         TimeSpan? slidingExpiration = default)
     {
-        if (Enable)
+        if (IsEnabled)
         {
             // Attempt to get data from the cache
             var cachedData = await _distributedCache.GetStringAsync(cacheKey);
@@ -40,7 +40,7 @@ public class CacheHelper : ICacheHelper
         // Data not in cache; retrieve data from the provided function
         var data = await getData();
 
-        if (Enable)
+        if (IsEnabled)
             // Cache the data
             await SetAsync(cacheKey, data, absoluteExpiration, slidingExpiration);
 
@@ -50,7 +50,7 @@ public class CacheHelper : ICacheHelper
     public async Task SetAsync<T>(string cacheKey, T data, TimeSpan? absoluteExpiration = default,
         TimeSpan? slidingExpiration = default)
     {
-        if (Enable)
+        if (IsEnabled)
         {
             // Set default values if they are not provided
             absoluteExpiration ??= TimeSpan.FromMinutes(Constant.DEFAULT_ABSOLUTE_EXPIRATION_IN_MINUTES);
@@ -69,7 +69,7 @@ public class CacheHelper : ICacheHelper
 
     public async Task InvalidateCacheByPatternAsync(string pattern)
     {
-        if (Enable)
+        if (IsEnabled)
         {
             var server = _connectionMultiplexer.GetServer(_connectionMultiplexer.GetEndPoints()[0]);
             foreach (var key in server.Keys(pattern: pattern))

@@ -31,13 +31,15 @@ public static class Configuration
         });
 
         // Redis
-        services.AddStackExchangeRedisCache(options =>
+        if (bool.Parse(configuration["Redis:IsEnabled"] ?? "false"))
         {
-            options.Configuration = configuration["Redis:Configuration"];
-            // options.InstanceName = builder.Configuration["Redis:InstanceName"];
-        });
-        services.AddSingleton<IConnectionMultiplexer>(
-            ConnectionMultiplexer.Connect(configuration["Redis:Configuration"]!));
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = configuration["Redis:Configuration"];
+            });
+            services.AddSingleton<IConnectionMultiplexer>(
+                ConnectionMultiplexer.Connect(configuration["Redis:Configuration"]!));
+        }
 
         // JWT
         services.AddAuthentication(options =>
