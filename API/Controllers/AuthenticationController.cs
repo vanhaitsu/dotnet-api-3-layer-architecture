@@ -80,6 +80,39 @@ public class AuthenticationController : ControllerBase
         }
     }
 
+    [Authorize]
+    [HttpPost("token/revoke")]
+    public async Task<IActionResult> RevokeTokens([FromBody] AccountEmailModel accountEmailModel)
+    {
+        try
+        {
+            var result = await _accountService.RevokeTokens(accountEmailModel);
+            if (result.Status) return Ok(result);
+
+            return BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex);
+        }
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        try
+        {
+            var result = await _accountService.Delete(id);
+            if (result.Status) return Ok(result);
+
+            return BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex);
+        }
+    }
+
     [HttpGet("email/verify")]
     public async Task<IActionResult> VerifyEmail([FromQuery] string email, [FromQuery] string verificationCode)
     {

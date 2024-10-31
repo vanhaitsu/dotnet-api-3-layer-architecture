@@ -159,7 +159,22 @@ public class AccountService : IAccountService
         return new ResponseModel
         {
             Status = false,
-            Message = "Cannot refresh the token"
+            Message = "Cannot refresh token"
+        };
+    }
+
+    public async Task<ResponseModel> RevokeTokens(AccountEmailModel accountEmailModel)
+    {
+        var refreshTokens =
+            await _unitOfWork.RefreshTokenRepository.GetAllAsync(
+                x => x.Account.Email == accountEmailModel.Email);
+        _unitOfWork.RefreshTokenRepository.HardDeleteRange(refreshTokens.Data);
+        await _unitOfWork.SaveChangeAsync();
+
+        return new ResponseModel
+        {
+            Status = true,
+            Message = "Revoke tokens successfully"
         };
     }
 

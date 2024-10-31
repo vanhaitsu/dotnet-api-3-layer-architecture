@@ -31,15 +31,12 @@ public static class Configuration
         });
 
         // Redis
-        if (bool.Parse(configuration["Redis:IsEnabled"] ?? "false"))
+        services.AddStackExchangeRedisCache(options =>
         {
-            services.AddStackExchangeRedisCache(options =>
-            {
-                options.Configuration = configuration["Redis:Configuration"];
-            });
-            services.AddSingleton<IConnectionMultiplexer>(
-                ConnectionMultiplexer.Connect(configuration["Redis:Configuration"]!));
-        }
+            options.Configuration = configuration["Redis:Configuration"];
+        });
+        services.AddSingleton<IConnectionMultiplexer>(
+            ConnectionMultiplexer.Connect(configuration["Redis:Configuration"]!));
 
         // JWT
         services.AddAuthentication(options =>

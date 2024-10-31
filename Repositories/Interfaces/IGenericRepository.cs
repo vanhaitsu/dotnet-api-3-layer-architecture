@@ -7,7 +7,6 @@ namespace Repositories.Interfaces;
 public interface IGenericRepository<T> where T : BaseEntity
 {
     Task<T?> GetAsync(Guid id, string? include = "");
-    Task<List<T>> GetAllAsync(string? include = "");
 
     Task<PaginationResult<List<T>>> GetAllAsync(
         Expression<Func<T, bool>>? filter = null,

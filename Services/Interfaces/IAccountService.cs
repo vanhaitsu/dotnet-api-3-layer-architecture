@@ -10,6 +10,7 @@ public interface IAccountService
     Task<ResponseModel> Register(AccountRegisterModel accountRegisterModel);
     Task<ResponseModel> Login(AccountLoginModel accountLoginModel);
     Task<ResponseModel> RefreshToken(AccountRefreshTokenModel accountRefreshTokenModel);
+    Task<ResponseModel> RevokeTokens(AccountEmailModel accountEmailModel);
     Task<ResponseModel> VerifyEmail(string email, string verificationCode);
     Task<ResponseModel> ResendVerificationEmail(AccountEmailModel accountEmailModel);
     Task<ResponseModel> ChangePassword(AccountChangePasswordModel accountChangePasswordModel);

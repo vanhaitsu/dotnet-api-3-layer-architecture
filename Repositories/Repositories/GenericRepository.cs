@@ -29,16 +29,6 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         return result;
     }
 
-    public virtual async Task<List<T>> GetAllAsync(string? include = "")
-    {
-        IQueryable<T> query = _dbSet;
-        if (!string.IsNullOrEmpty(include))
-            foreach (var includeProperty in include.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                query = query.Include(includeProperty.Trim());
-
-        return await query.ToListAsync();
-    }
-
     public virtual async Task<PaginationResult<List<T>>> GetAllAsync(
         Expression<Func<T, bool>>? filter = null,
         Func<IQueryable<T>, IOrderedQueryable<T>>? order = null,
@@ -61,6 +51,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
                 query = query.Include(includeProperty.Trim());
 
         // Pagination
+        // If pageIndex and pageSize are both null, return all items
         if (pageIndex.HasValue && pageSize.HasValue)
         {
             var validPageIndex = pageIndex.Value > 0 ? pageIndex.Value - 1 : 0;
