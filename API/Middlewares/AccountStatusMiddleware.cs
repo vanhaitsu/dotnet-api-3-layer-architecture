@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Repositories.Interfaces;
+using Services.Models.ResponseModel;
 
 namespace API.Middlewares;
 
@@ -23,10 +24,14 @@ public class AccountStatusMiddleware : IMiddleware
             var account = await _unitOfWork.AccountRepository.GetAsync(currentUserId.Value);
             if (account != null && account.IsDeleted)
             {
-                var response = new
+                var response = new ResponseModel
                 {
-                    isDeleted = true,
-                    message = "Account has been deleted"
+                    Status = false,
+                    Message = "Account has been deleted",
+                    Data = new
+                    {
+                        IsDeleted = true
+                    }
                 };
 
                 var jsonResponse = JsonConvert.SerializeObject(response);

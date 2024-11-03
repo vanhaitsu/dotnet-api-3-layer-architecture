@@ -41,7 +41,7 @@ builder.Services.AddSwaggerGen(x =>
 });
 
 // Add API configuration
-builder.Services.AddAPIConfiguration(builder.Configuration);
+builder.Services.AddApiConfiguration(builder.Configuration);
 
 var app = builder.Build();
 

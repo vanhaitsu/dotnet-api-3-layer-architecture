@@ -19,7 +19,7 @@ namespace Services.Services;
 
 public class AccountService : IAccountService
 {
-    private readonly ICacheHelper _cacheHelper;
+    private readonly IRedisHelper _redisHelper;
     private readonly IClaimService _claimService;
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
@@ -27,14 +27,14 @@ public class AccountService : IAccountService
     private readonly IUnitOfWork _unitOfWork;
 
     public AccountService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration,
-        IEmailService emailService, IClaimService claimService, ICacheHelper cacheHelper)
+        IEmailService emailService, IClaimService claimService, IRedisHelper redisHelper)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _configuration = configuration;
         _emailService = emailService;
         _claimService = claimService;
-        _cacheHelper = cacheHelper;
+        _redisHelper = redisHelper;
     }
 
     public async Task<ResponseModel> Register(AccountRegisterModel accountRegisterModel)
@@ -92,7 +92,7 @@ public class AccountService : IAccountService
 
             if (AuthenticationTools.VerifyPassword(accountLoginModel.Password, account.HashedPassword))
             {
-                var tokenModel = await GenerateJWTToken(account);
+                var tokenModel = await GenerateJwtToken(account);
                 if (tokenModel != null)
                     return new ResponseModel
                     {
@@ -147,7 +147,7 @@ public class AccountService : IAccountService
                 Message = "Invalid access token or refresh token"
             };
 
-        var tokenModel = await GenerateJWTToken(account, refreshToken, principal);
+        var tokenModel = await GenerateJwtToken(account, refreshToken, principal);
         if (tokenModel != null)
             return new ResponseModel
             {
@@ -384,7 +384,7 @@ public class AccountService : IAccountService
     public async Task<ResponseModel> Get(Guid id)
     {
         var cacheKey = $"account_{id}";
-        var responseModel = await _cacheHelper.GetOrSetAsync(cacheKey, async () =>
+        var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
         {
             var account = await _unitOfWork.AccountRepository.GetAsync(id, "AccountRoles.Role");
             if (account == null)
@@ -410,7 +410,7 @@ public class AccountService : IAccountService
     public async Task<ResponseModel> GetAll(AccountFilterModel accountFilterModel)
     {
         var cacheKey = $"accounts_{CacheTools.GenerateCacheKey(accountFilterModel)}";
-        var responseModel = await _cacheHelper.GetOrSetAsync(cacheKey, async () =>
+        var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
         {
             var accounts = await _unitOfWork.AccountRepository.GetAllAsync(
                 x =>
@@ -477,8 +477,8 @@ public class AccountService : IAccountService
         _unitOfWork.AccountRepository.Update(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
-            await _cacheHelper.InvalidateCacheByPatternAsync($"account_{id}");
-            await _cacheHelper.InvalidateCacheByPatternAsync("accounts_*");
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{id}");
+            await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
 
             return new ResponseModel
             {
@@ -508,8 +508,8 @@ public class AccountService : IAccountService
         _unitOfWork.AccountRepository.Update(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
-            await _cacheHelper.InvalidateCacheByPatternAsync($"account_{id}");
-            await _cacheHelper.InvalidateCacheByPatternAsync("accounts_*");
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{id}");
+            await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
 
             return new ResponseModel
             {
@@ -538,8 +538,8 @@ public class AccountService : IAccountService
         _unitOfWork.AccountRepository.SoftDelete(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
-            await _cacheHelper.InvalidateCacheByPatternAsync($"account_{id}");
-            await _cacheHelper.InvalidateCacheByPatternAsync("accounts_*");
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{id}");
+            await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
 
             return new ResponseModel
             {
@@ -568,8 +568,8 @@ public class AccountService : IAccountService
         _unitOfWork.AccountRepository.Restore(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
-            await _cacheHelper.InvalidateCacheByPatternAsync($"account_{id}");
-            await _cacheHelper.InvalidateCacheByPatternAsync("accounts_*");
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{id}");
+            await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
 
             return new ResponseModel
             {
@@ -593,14 +593,14 @@ public class AccountService : IAccountService
             $"Your verification code is {account.VerificationCode}. The code will expire in 15 minutes.", true);
     }
 
-    private async Task<TokenModel?> GenerateJWTToken(Account account, RefreshToken? refreshToken = null,
+    private async Task<TokenModel?> GenerateJwtToken(Account account, RefreshToken? refreshToken = null,
         ClaimsPrincipal? principal = null)
     {
         // Refresh token information
         var authClaims = new List<Claim>();
         var deviceId = Guid.NewGuid();
         var refreshTokenString =
-            AuthenticationTools.GenerateUniqueToken(DateTime.Now.AddDays(Constant.REFRESH_TOKEN_VALIDITY_IN_DAYS));
+            AuthenticationTools.GenerateUniqueToken(DateTime.Now.AddDays(Constant.RefreshTokenValidityInDays));
         if (refreshToken != null && principal != null)
         {
             // If refresh token then reuse the claims
@@ -627,7 +627,7 @@ public class AccountService : IAccountService
 
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
-            var jwtToken = AuthenticationTools.CreateJWTToken(authClaims, _configuration);
+            var jwtToken = AuthenticationTools.CreateJwtToken(authClaims, _configuration);
 
             return new TokenModel
             {

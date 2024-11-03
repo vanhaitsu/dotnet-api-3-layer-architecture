@@ -7,19 +7,17 @@ using StackExchange.Redis;
 
 namespace Services.Helpers;
 
-public class CacheHelper : ICacheHelper
+public class RedisHelper : IRedisHelper
 {
-    private readonly IConfiguration _configuration;
     private readonly IConnectionMultiplexer _connectionMultiplexer;
     private readonly IDistributedCache _distributedCache;
 
-    public CacheHelper(IDistributedCache distributedCache, IConnectionMultiplexer connectionMultiplexer,
+    public RedisHelper(IDistributedCache distributedCache, IConnectionMultiplexer connectionMultiplexer,
         IConfiguration configuration)
     {
         _distributedCache = distributedCache;
         _connectionMultiplexer = connectionMultiplexer;
-        _configuration = configuration;
-        IsEnabled = bool.Parse(_configuration["Redis:IsEnabled"] ?? "false");
+        IsEnabled = bool.Parse(configuration["Redis:IsEnabled"] ?? "false");
     }
 
     private bool IsEnabled { get; }
@@ -53,8 +51,8 @@ public class CacheHelper : ICacheHelper
         if (IsEnabled)
         {
             // Set default values if they are not provided
-            absoluteExpiration ??= TimeSpan.FromMinutes(Constant.DEFAULT_ABSOLUTE_EXPIRATION_IN_MINUTES);
-            slidingExpiration ??= TimeSpan.FromMinutes(Constant.DEFAULT_SLIDING_EXPIRATION_IN_MINUTES);
+            absoluteExpiration ??= TimeSpan.FromMinutes(Constant.DefaultAbsoluteExpirationInMinutes);
+            slidingExpiration ??= TimeSpan.FromMinutes(Constant.DefaultSlidingExpirationInMinutes);
 
             // Cache the data
             var cacheOptions = new DistributedCacheEntryOptions

@@ -1,6 +1,6 @@
 ﻿namespace Services.Interfaces;
 
-public interface ICacheHelper
+public interface IRedisHelper
 {
     Task<T> GetOrSetAsync<T>(string cacheKey, Func<Task<T>> getData, TimeSpan? absoluteExpiration = default,
         TimeSpan? slidingExpiration = default);

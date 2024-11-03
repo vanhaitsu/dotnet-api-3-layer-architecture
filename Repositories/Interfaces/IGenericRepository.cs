@@ -6,6 +6,8 @@ namespace Repositories.Interfaces;
 
 public interface IGenericRepository<T> where T : BaseEntity
 {
+    Task AddAsync(T entity);
+    Task AddRangeAsync(List<T> entities);
     Task<T?> GetAsync(Guid id, string? include = "");
 
     Task<PaginationResult<List<T>>> GetAllAsync(
@@ -16,8 +18,6 @@ public interface IGenericRepository<T> where T : BaseEntity
         int? pageSize = null
     );
 
-    Task AddAsync(T entity);
-    Task AddRangeAsync(List<T> entities);
     void Update(T entity);
     void UpdateRange(List<T> entities);
     void SoftDelete(T entity);

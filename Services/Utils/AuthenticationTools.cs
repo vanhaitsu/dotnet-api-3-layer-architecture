@@ -48,13 +48,13 @@ public static class AuthenticationTools
         return dateTime < DateTime.Now.AddHours(-24);
     }
 
-    public static JwtSecurityToken CreateJWTToken(List<Claim> authClaims, IConfiguration configuration)
+    public static JwtSecurityToken CreateJwtToken(List<Claim> authClaims, IConfiguration configuration)
     {
         var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Secret"]!));
         var token = new JwtSecurityToken(
             audience: configuration["JWT:ValidAudience"],
             issuer: configuration["URL:Server"],
-            expires: DateTime.Now.AddMinutes(Constant.ACCESS_TOKEN_VALIDITY_IN_MINUTES),
+            expires: DateTime.Now.AddMinutes(Constant.AccessTokenValidityInMinutes),
             claims: authClaims,
             signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
         );

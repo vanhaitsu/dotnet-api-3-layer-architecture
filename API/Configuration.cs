@@ -19,7 +19,7 @@ namespace API;
 
 public static class Configuration
 {
-    public static IServiceCollection AddAPIConfiguration(this IServiceCollection services,
+    public static IServiceCollection AddApiConfiguration(this IServiceCollection services,
         ConfigurationManager configuration)
     {
         #region Configuartion
@@ -27,7 +27,7 @@ public static class Configuration
         // Local database
         services.AddDbContext<AppDbContext>(options =>
         {
-            options.UseNpgsql(configuration.GetConnectionString("LocalDB"));
+            options.UseNpgsql(configuration.GetConnectionString("LocalDb"));
         });
 
         // Redis
@@ -78,9 +78,9 @@ public static class Configuration
 
         #region Middleware
 
+        services.AddScoped<AccountStatusMiddleware>();
         services.AddSingleton<GlobalExceptionMiddleware>();
         services.AddSingleton<PerformanceMiddleware>();
-        services.AddScoped<AccountStatusMiddleware>();
         services.AddSingleton<Stopwatch>();
 
         #endregion
@@ -90,7 +90,7 @@ public static class Configuration
         services.AddHttpContextAccessor();
         services.AddAutoMapper(typeof(MapperProfile).Assembly);
         services.AddScoped<IClaimService, ClaimService>();
-        services.AddScoped<ICacheHelper, CacheHelper>();
+        services.AddScoped<IRedisHelper, RedisHelper>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddTransient<IEmailService, EmailService>();
 

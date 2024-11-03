@@ -14,7 +14,7 @@ public class EmailService : IEmailService
         _configuration = configuration;
     }
 
-    public Task SendEmailAsync(string toEmail, string subject, string body, bool isBodyHTML)
+    public Task SendEmailAsync(string toEmail, string subject, string body, bool isBodyHtml)
     {
         var mailServer = _configuration["EmailSettings:MailServer"]!;
         var fromEmail = _configuration["EmailSettings:FromEmail"]!;
@@ -28,7 +28,7 @@ public class EmailService : IEmailService
 
         var mailMessage = new MailMessage(fromEmail, toEmail, subject, body)
         {
-            IsBodyHtml = isBodyHTML
+            IsBodyHtml = isBodyHtml
         };
 
         return client.SendMailAsync(mailMessage);

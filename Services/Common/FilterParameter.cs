@@ -14,8 +14,8 @@ public class FilterParameter
 
     #region Pagination
 
-    protected virtual int MinPageSize { get; set; } = Constant.DEFAULT_MIN_PAGE_SIZE;
-    protected virtual int MaxPageSize { get; set; } = Constant.DEFAULT_MAX_PAGE_SIZE;
+    protected virtual int MinPageSize { get; set; } = Constant.DefaultMinPageSize;
+    protected virtual int MaxPageSize { get; set; } = Constant.DefaultMaxPageSize;
     public int PageIndex { get; set; } = 1;
 
     [JsonIgnore]

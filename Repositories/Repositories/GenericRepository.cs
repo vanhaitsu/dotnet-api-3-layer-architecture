@@ -17,6 +17,24 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         _claimService = claimService;
     }
 
+    public virtual async Task AddAsync(T entity)
+    {
+        entity.CreationDate = DateTime.Now;
+        entity.CreatedBy = _claimService.GetCurrentUserId;
+        await _dbSet.AddAsync(entity);
+    }
+
+    public virtual async Task AddRangeAsync(List<T> entities)
+    {
+        foreach (var entity in entities)
+        {
+            entity.CreationDate = DateTime.Now;
+            entity.CreatedBy = _claimService.GetCurrentUserId;
+        }
+
+        await _dbSet.AddRangeAsync(entities);
+    }
+
     public virtual async Task<T?> GetAsync(Guid id, string? include = "")
     {
         IQueryable<T> query = _dbSet;
@@ -55,7 +73,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         if (pageIndex.HasValue && pageSize.HasValue)
         {
             var validPageIndex = pageIndex.Value > 0 ? pageIndex.Value - 1 : 0;
-            var validPageSize = pageSize.Value > 0 ? pageSize.Value : Constant.DEFAULT_MIN_PAGE_SIZE;
+            var validPageSize = pageSize.Value > 0 ? pageSize.Value : Constant.DefaultMinPageSize;
             query = query.Skip(validPageIndex * validPageSize).Take(validPageSize);
         }
 
@@ -64,24 +82,6 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
             TotalCount = totalCount,
             Data = await query.ToListAsync()
         };
-    }
-
-    public virtual async Task AddAsync(T entity)
-    {
-        entity.CreationDate = DateTime.Now;
-        entity.CreatedBy = _claimService.GetCurrentUserId;
-        await _dbSet.AddAsync(entity);
-    }
-
-    public virtual async Task AddRangeAsync(List<T> entities)
-    {
-        foreach (var entity in entities)
-        {
-            entity.CreationDate = DateTime.Now;
-            entity.CreatedBy = _claimService.GetCurrentUserId;
-        }
-
-        await _dbSet.AddRangeAsync(entities);
     }
 
     public virtual void Update(T entity)
