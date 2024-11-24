@@ -135,16 +135,32 @@ public class AccountService : IAccountService
                 Message = "Device not found"
             };
 
-        // Validate access token and refresh token
+        // Validate access token
         var principal =
             AuthenticationTools.GetPrincipalFromExpiredToken(accountRefreshTokenModel.AccessToken, _configuration);
-        var account = await _unitOfWork.AccountRepository.GetAsync(Guid.Parse(principal!.FindFirst("userId")!.Value));
+        if (principal == null)
+            return new ResponseModel
+            {
+                StatusCode = StatusCodes.Status401Unauthorized,
+                Message = "Invalid access token"
+            };
+
+        var accountIdFromPrincipal = principal.FindFirst("accountId")?.Value;
+        if (string.IsNullOrEmpty(accountIdFromPrincipal) || !Guid.TryParse(accountIdFromPrincipal, out var accountId))
+            return new ResponseModel
+            {
+                StatusCode = StatusCodes.Status401Unauthorized,
+                Message = "Invalid account"
+            };
+
+        // Validate refresh token
+        var account = await _unitOfWork.AccountRepository.GetAsync(accountId);
         if (account == null || account.IsDeleted || refreshToken.AccountId != account.Id ||
             refreshToken.Token != accountRefreshTokenModel.RefreshToken)
             return new ResponseModel
             {
                 StatusCode = StatusCodes.Status401Unauthorized,
-                Message = "Invalid access token or refresh token"
+                Message = "Invalid refresh token"
             };
 
         var tokenModel = await GenerateJwtToken(account, refreshToken, principal);
@@ -597,8 +613,8 @@ public class AccountService : IAccountService
         else
         {
             // If sign in then add claims
-            authClaims.Add(new Claim("userId", account.Id.ToString()));
-            authClaims.Add(new Claim("userEmail", account.Email));
+            authClaims.Add(new Claim("accountId", account.Id.ToString()));
+            authClaims.Add(new Claim("accountEmail", account.Email));
             authClaims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
             var roles = await _unitOfWork.RoleRepository.GetAllByAccountIdAsync(account.Id);
             foreach (var role in roles) authClaims.Add(new Claim(ClaimTypes.Role, role.Name));
