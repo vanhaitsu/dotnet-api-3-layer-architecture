@@ -2,7 +2,7 @@
 
 namespace Services.Models.AccountModels;
 
-public class AccountLoginModel
+public class AccountSignInModel
 {
     [Required]
     [EmailAddress]

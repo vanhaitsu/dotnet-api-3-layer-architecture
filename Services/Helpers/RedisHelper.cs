@@ -1,6 +1,6 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
+﻿using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
-using System.Text.Json;
 using Repositories.Common;
 using Services.Interfaces;
 using StackExchange.Redis;

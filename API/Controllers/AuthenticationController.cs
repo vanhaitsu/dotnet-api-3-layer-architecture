@@ -16,31 +16,27 @@ public class AuthenticationController : ControllerBase
         _accountService = accountService;
     }
 
-    [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] AccountRegisterModel accountRegisterModel)
+    [HttpPost("sign-up")]
+    public async Task<IActionResult> SignUp([FromBody] AccountSignUpModel accountSignUpModel)
     {
         try
         {
-            var result = await _accountService.Register(accountRegisterModel);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            var result = await _accountService.SignUp(accountSignUpModel);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
         }
     }
 
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] AccountLoginModel accountLoginModel)
+    [HttpPost("sign-in")]
+    public async Task<IActionResult> SignIn([FromBody] AccountSignInModel accountSignInModel)
     {
         try
         {
-            var result = await _accountService.Login(accountLoginModel);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            var result = await _accountService.SignIn(accountSignInModel);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -70,9 +66,7 @@ public class AuthenticationController : ControllerBase
             #endregion
 
             var result = await _accountService.RefreshToken(accountRefreshTokenModel);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -87,9 +81,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.RevokeTokens(accountEmailModel);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -103,9 +95,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.Delete(id);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -119,9 +109,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.VerifyEmail(email, verificationCode);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -135,9 +123,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.ResendVerificationEmail(accountEmailModel);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -152,9 +138,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.ChangePassword(accountChangePasswordModel);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -168,9 +152,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.ForgotPassword(accountEmailModel);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -184,9 +166,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.ResetPassword(accountResetPasswordModel);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {

@@ -18,14 +18,12 @@ public class AccountController : ControllerBase
     }
 
     [HttpPost("range")]
-    public async Task<IActionResult> AddRange([FromBody] List<AccountRegisterModel> accountRegisterModels)
+    public async Task<IActionResult> AddRange([FromBody] List<AccountSignUpModel> accountSignUpModels)
     {
         try
         {
-            var result = await _accountService.AddRange(accountRegisterModels);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            var result = await _accountService.AddRange(accountSignUpModels);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -39,9 +37,7 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.Get(id);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -55,9 +51,7 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.GetAll(accountFilterModel);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -71,9 +65,7 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.UpdatePut(id, accountUpdateModel);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -87,9 +79,7 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.UpdatePatch(id, patchDoc);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -103,9 +93,7 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.Delete(id);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {
@@ -119,9 +107,7 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.Restore(id);
-            if (result.Status) return Ok(result);
-
-            return BadRequest(result);
+            return StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {

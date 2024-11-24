@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.JsonPatch;
 using Repositories.Entities;
 using Services.Models.AccountModels;
-using Services.Models.ResponseModel;
+using Services.Models.ResponseModels;
 
 namespace Services.Interfaces;
 
 public interface IAccountService
 {
-    Task<ResponseModel> Register(AccountRegisterModel accountRegisterModel);
-    Task<ResponseModel> Login(AccountLoginModel accountLoginModel);
+    Task<ResponseModel> SignUp(AccountSignUpModel accountSignUpModel);
+    Task<ResponseModel> SignIn(AccountSignInModel accountSignInModel);
     Task<ResponseModel> RefreshToken(AccountRefreshTokenModel accountRefreshTokenModel);
     Task<ResponseModel> RevokeTokens(AccountEmailModel accountEmailModel);
     Task<ResponseModel> VerifyEmail(string email, string verificationCode);
@@ -16,7 +16,7 @@ public interface IAccountService
     Task<ResponseModel> ChangePassword(AccountChangePasswordModel accountChangePasswordModel);
     Task<ResponseModel> ForgotPassword(AccountEmailModel accountEmailModel);
     Task<ResponseModel> ResetPassword(AccountResetPasswordModel accountResetPasswordModel);
-    Task<ResponseModel> AddRange(List<AccountRegisterModel> accountRegisterModels);
+    Task<ResponseModel> AddRange(List<AccountSignUpModel> accountSignUpModels);
     Task<ResponseModel> Get(Guid id);
     Task<ResponseModel> GetAll(AccountFilterModel accountFilterModel);
     Task<ResponseModel> UpdatePut(Guid id, AccountUpdateModel accountUpdateModel);

@@ -11,12 +11,13 @@ public class MapperProfile : Profile
     public MapperProfile()
     {
         // Account
-        CreateMap<AccountRegisterModel, Account>();
+        CreateMap<AccountSignUpModel, Account>();
         CreateMap<Account, AccountModel>()
             .ForMember(dest => dest.Roles,
-                opt => opt.MapFrom(src => src.AccountRoles.Select(x => x.Role.Name).Select(Enum.Parse<Role>)))
+                opt => opt.MapFrom(
+                    src => Enumerable.Select(src.AccountRoles, x => x.Role.Name).Select(Enum.Parse<Role>)))
             .ForMember(dest => dest.RoleNames,
-                opt => opt.MapFrom(src => src.AccountRoles.Select(x => x.Role.Name)));
+                opt => opt.MapFrom(src => Enumerable.Select(src.AccountRoles, x => x.Role.Name)));
         CreateMap<AccountUpdateModel, Account>();
     }
 }

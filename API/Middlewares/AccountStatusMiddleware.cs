@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 using Repositories.Interfaces;
-using Services.Models.ResponseModel;
+using Services.Models.ResponseModels;
 
 namespace API.Middlewares;
 
@@ -26,8 +26,8 @@ public class AccountStatusMiddleware : IMiddleware
             {
                 var response = new ResponseModel
                 {
-                    Status = false,
-                    Message = "Account has been deleted",
+                    StatusCode = StatusCodes.Status403Forbidden,
+                    Message = "Your account has been deleted",
                     Data = new
                     {
                         IsDeleted = true
@@ -35,7 +35,7 @@ public class AccountStatusMiddleware : IMiddleware
                 };
 
                 var jsonResponse = JsonSerializer.Serialize(response);
-                context.Response.StatusCode = 401;
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(jsonResponse);
 
