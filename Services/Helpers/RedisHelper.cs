@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
+using System.Text.Json;
 using Repositories.Common;
 using Services.Interfaces;
 using StackExchange.Redis;
@@ -32,7 +32,7 @@ public class RedisHelper : IRedisHelper
             var cachedData = await _distributedCache.GetStringAsync(cacheKey);
             if (!string.IsNullOrEmpty(cachedData))
                 // If data exists, deserialize and return it
-                return JsonConvert.DeserializeObject<T>(cachedData)!;
+                return JsonSerializer.Deserialize<T>(cachedData)!;
         }
 
         // Data not in cache; retrieve data from the provided function
@@ -60,7 +60,7 @@ public class RedisHelper : IRedisHelper
                 AbsoluteExpirationRelativeToNow = absoluteExpiration,
                 SlidingExpiration = slidingExpiration
             };
-            var serializedData = JsonConvert.SerializeObject(data);
+            var serializedData = JsonSerializer.Serialize(data);
             await _distributedCache.SetStringAsync(cacheKey, serializedData, cacheOptions);
         }
     }
