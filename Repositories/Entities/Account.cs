@@ -28,6 +28,9 @@ public class Account : BaseEntity
     public string? ResetPasswordToken { get; set; }
 
     // Relationship
+    public virtual ICollection<AccountConversation> AccountConversations { get; set; } =
+        new List<AccountConversation>();
+
     public virtual ICollection<AccountRole> AccountRoles { get; set; } = new List<AccountRole>();
     public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 }

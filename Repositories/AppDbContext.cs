@@ -13,7 +13,11 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Account> Accounts { get; set; }
+    public DbSet<AccountConversation> AccountConversations { get; set; }
     public DbSet<AccountRole> AccountRoles { get; set; }
+    public DbSet<Conversation> Conversations { get; set; }
+    public DbSet<Message> Messages { get; set; }
+    public DbSet<MessageRecipient> MessageRecipients { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Role> Roles { get; set; }
 
@@ -33,6 +37,8 @@ public class AppDbContext : DbContext
             entity.Property(x => x.EmailConfirmed).HasDefaultValue(false);
             entity.Property(x => x.PhoneNumberConfirmed).HasDefaultValue(false);
         });
+
+        modelBuilder.Entity<Conversation>(entity => { entity.Property(x => x.Name).HasMaxLength(50); });
 
         modelBuilder.Entity<Role>(entity =>
         {

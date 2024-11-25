@@ -9,7 +9,11 @@ public interface IUnitOfWork
     #region Repository
 
     IAccountRepository AccountRepository { get; }
+    IAccountConversationRepository AccountConversationRepository { get; }
     IAccountRoleRepository AccountRoleRepository { get; }
+    IConversationRepository ConversationRepository { get; }
+    IMessageRepository MessageRepository { get; }
+    IMessageRecipientRepository MessageRecipientRepository { get; }
     IRefreshTokenRepository RefreshTokenRepository { get; }
     IRoleRepository RoleRepository { get; }
 

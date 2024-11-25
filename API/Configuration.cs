@@ -102,8 +102,20 @@ public static class Configuration
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<IAccountRepository, AccountRepository>();
 
+        // AccountConversation
+        services.AddScoped<IAccountConversationRepository, AccountConversationRepository>();
+
         // AccountRole
         services.AddScoped<IAccountRoleRepository, AccountRoleRepository>();
+
+        // Conversation
+        services.AddScoped<IConversationRepository, ConversationRepository>();
+
+        // Message
+        services.AddScoped<IMessageRepository, MessageRepository>();
+
+        // MessageRecipient
+        services.AddScoped<IMessageRecipientRepository, MessageRecipientRepository>();
 
         // RefreshToken
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
