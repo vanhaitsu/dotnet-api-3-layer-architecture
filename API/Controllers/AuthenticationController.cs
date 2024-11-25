@@ -89,20 +89,6 @@ public class AuthenticationController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(Guid id)
-    {
-        try
-        {
-            var result = await _accountService.Delete(id);
-            return StatusCode(result.Code, result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex);
-        }
-    }
-
     [HttpGet("email/verify")]
     public async Task<IActionResult> VerifyEmail([FromQuery] string email, [FromQuery] string verificationCode)
     {
