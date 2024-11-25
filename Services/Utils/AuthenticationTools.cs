@@ -45,7 +45,7 @@ public static class AuthenticationTools
         var data = Convert.FromBase64String(token);
         var dateTime = DateTime.FromBinary(BitConverter.ToInt64(data, 0));
 
-        return dateTime < DateTime.Now.AddHours(-24);
+        return dateTime < DateTime.UtcNow.AddHours(-24);
     }
 
     public static JwtSecurityToken CreateJwtToken(List<Claim> authClaims, IConfiguration configuration)
@@ -54,7 +54,7 @@ public static class AuthenticationTools
         var token = new JwtSecurityToken(
             audience: configuration["JWT:ValidAudience"],
             issuer: configuration["URL:Server"],
-            expires: DateTime.Now.AddMinutes(Constant.AccessTokenValidityInMinutes),
+            expires: DateTime.UtcNow.AddMinutes(Constant.AccessTokenValidityInMinutes),
             claims: authClaims,
             signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
         );

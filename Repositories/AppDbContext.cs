@@ -8,8 +8,8 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
         // These lines will fix the error "Cannot write DateTime with Kind=Local to PostgreSQL type 'timestamp with time zone', only UTC is supported"
-        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-        AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
+        // AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+        // AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
     }
 
     public DbSet<Account> Accounts { get; set; }

@@ -22,7 +22,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.SignUp(accountSignUpModel);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -36,7 +36,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.SignIn(accountSignInModel);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -66,7 +66,7 @@ public class AuthenticationController : ControllerBase
             #endregion
 
             var result = await _accountService.RefreshToken(accountRefreshTokenModel);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -81,7 +81,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.RevokeTokens(accountEmailModel);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -95,7 +95,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.Delete(id);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -109,7 +109,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.VerifyEmail(email, verificationCode);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -123,7 +123,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.ResendVerificationEmail(accountEmailModel);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -138,7 +138,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.ChangePassword(accountChangePasswordModel);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -152,7 +152,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.ForgotPassword(accountEmailModel);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -166,7 +166,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             var result = await _accountService.ResetPassword(accountResetPasswordModel);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {

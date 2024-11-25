@@ -19,7 +19,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
 
     public virtual async Task AddAsync(T entity)
     {
-        entity.CreationDate = DateTime.Now;
+        entity.CreationDate = DateTime.UtcNow;
         entity.CreatedBy = _claimService.GetCurrentUserId;
         await _dbSet.AddAsync(entity);
     }
@@ -28,7 +28,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
     {
         foreach (var entity in entities)
         {
-            entity.CreationDate = DateTime.Now;
+            entity.CreationDate = DateTime.UtcNow;
             entity.CreatedBy = _claimService.GetCurrentUserId;
         }
 
@@ -86,7 +86,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
 
     public virtual void Update(T entity)
     {
-        entity.ModificationDate = DateTime.Now;
+        entity.ModificationDate = DateTime.UtcNow;
         entity.ModifiedBy = _claimService.GetCurrentUserId;
         _dbSet.Update(entity);
     }
@@ -95,7 +95,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
     {
         foreach (var entity in entities)
         {
-            entity.ModificationDate = DateTime.Now;
+            entity.ModificationDate = DateTime.UtcNow;
             entity.ModifiedBy = _claimService.GetCurrentUserId;
         }
 
@@ -105,7 +105,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
     public virtual void SoftDelete(T entity)
     {
         entity.IsDeleted = true;
-        entity.DeletionDate = DateTime.Now;
+        entity.DeletionDate = DateTime.UtcNow;
         entity.DeletedBy = _claimService.GetCurrentUserId;
         _dbSet.Update(entity);
     }
@@ -115,7 +115,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         foreach (var entity in entities)
         {
             entity.IsDeleted = true;
-            entity.DeletionDate = DateTime.Now;
+            entity.DeletionDate = DateTime.UtcNow;
             entity.DeletedBy = _claimService.GetCurrentUserId;
         }
 
@@ -127,7 +127,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         entity.IsDeleted = false;
         entity.DeletionDate = null;
         entity.DeletedBy = null;
-        entity.ModificationDate = DateTime.Now;
+        entity.ModificationDate = DateTime.UtcNow;
         entity.ModifiedBy = _claimService.GetCurrentUserId;
         _dbSet.Update(entity);
     }
@@ -139,7 +139,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
             entity.IsDeleted = false;
             entity.DeletionDate = null;
             entity.DeletedBy = null;
-            entity.ModificationDate = DateTime.Now;
+            entity.ModificationDate = DateTime.UtcNow;
             entity.ModifiedBy = _claimService.GetCurrentUserId;
         }
 

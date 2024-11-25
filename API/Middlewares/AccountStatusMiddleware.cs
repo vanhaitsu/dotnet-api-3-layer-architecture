@@ -26,7 +26,7 @@ public class AccountStatusMiddleware : IMiddleware
             {
                 var response = new ResponseModel
                 {
-                    StatusCode = StatusCodes.Status403Forbidden,
+                    Code = StatusCodes.Status403Forbidden,
                     Message = "Your account has been deleted",
                     Data = new
                     {

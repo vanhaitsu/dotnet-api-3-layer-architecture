@@ -17,11 +17,10 @@ public static class InitialSeeding
     public static async Task Initialize(IServiceProvider serviceProvider)
     {
         var context = serviceProvider.GetRequiredService<AppDbContext>();
-
         foreach (var role in Roles)
             if (!context.Roles.Any(x => x.Name == role.Name))
             {
-                role.CreationDate = DateTime.Now;
+                role.CreationDate = DateTime.UtcNow;
                 context.Roles.Add(role);
             }
 

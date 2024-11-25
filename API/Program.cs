@@ -2,13 +2,15 @@ using API;
 using API.Hubs;
 using API.Middlewares;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
 using Repositories.Common;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers()
-    .AddNewtonsoftJson(); // AddNewtonsoftJson() is used to enable JsonPatchDocument for PATCH endpoint
+    // Enable JsonPatchDocument for PATCH endpoint and ignore all null values in response
+    .AddNewtonsoftJson(options => options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore);
 builder.Services.AddSignalR();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

@@ -1,5 +1,4 @@
-﻿using System.Text.Json.Serialization;
-using Repositories.Common;
+﻿using Repositories.Common;
 
 namespace Services.Common;
 
@@ -18,7 +17,6 @@ public class FilterParameter
     protected virtual int MaxPageSize { get; set; } = Constant.DefaultMaxPageSize;
     public int PageIndex { get; set; } = 1;
 
-    [JsonIgnore]
     public int PageSize
     {
         get => _pageSize;
@@ -30,7 +28,7 @@ public class FilterParameter
     #region Filter
 
     public string? Search { get; set; }
-    public string Order { get; set; } = "";
+    public string Order { get; set; } = string.Empty;
     public bool OrderByDescending { get; set; } = true;
     public bool IsDeleted { get; set; } = false;
 

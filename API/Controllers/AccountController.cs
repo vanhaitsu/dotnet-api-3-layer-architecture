@@ -23,7 +23,7 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.AddRange(accountSignUpModels);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -37,7 +37,7 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.Get(id);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -51,7 +51,7 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.GetAll(accountFilterModel);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -65,7 +65,7 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.UpdatePut(id, accountUpdateModel);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -79,7 +79,7 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.UpdatePatch(id, patchDoc);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -93,7 +93,7 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.Delete(id);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
@@ -107,7 +107,7 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.Restore(id);
-            return StatusCode(result.StatusCode, result);
+            return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {

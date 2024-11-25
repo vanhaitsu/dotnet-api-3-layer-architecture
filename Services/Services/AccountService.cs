@@ -44,7 +44,7 @@ public class AccountService : IAccountService
         if (existedAccount != null)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status409Conflict,
+                Code = StatusCodes.Status409Conflict,
                 Message = "Email already exists"
             };
 
@@ -52,7 +52,7 @@ public class AccountService : IAccountService
         account.Username = accountSignUpModel.Email.ToLower();
         account.HashedPassword = AuthenticationTools.HashPassword(accountSignUpModel.Password);
         account.VerificationCode = AuthenticationTools.GenerateDigitCode(6);
-        account.VerificationCodeExpiryTime = DateTime.Now.AddMinutes(15);
+        account.VerificationCodeExpiryTime = DateTime.UtcNow.AddMinutes(15);
         await _unitOfWork.AccountRepository.AddAsync(account);
 
         // Add "user" role as default
@@ -68,13 +68,13 @@ public class AccountService : IAccountService
             // await SendVerificationEmail(account);
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status201Created,
+                Code = StatusCodes.Status201Created,
                 Message = "Sign up successfully, please verify your email"
             };
 
         return new ResponseModel
         {
-            StatusCode = StatusCodes.Status500InternalServerError,
+            Code = StatusCodes.Status500InternalServerError,
             Message = "Cannot sign up"
         };
     }
@@ -87,7 +87,7 @@ public class AccountService : IAccountService
             if (account.IsDeleted)
                 return new ResponseModel
                 {
-                    StatusCode = StatusCodes.Status410Gone,
+                    Code = StatusCodes.Status410Gone,
                     Message = "Account has been deleted"
                 };
 
@@ -103,7 +103,7 @@ public class AccountService : IAccountService
 
                 return new ResponseModel
                 {
-                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Code = StatusCodes.Status500InternalServerError,
                     Message = "Cannot sign in"
                 };
             }
@@ -111,7 +111,7 @@ public class AccountService : IAccountService
 
         return new ResponseModel
         {
-            StatusCode = StatusCodes.Status401Unauthorized,
+            Code = StatusCodes.Status401Unauthorized,
             Message = "Invalid email or password"
         };
     }
@@ -122,7 +122,7 @@ public class AccountService : IAccountService
             accountRefreshTokenModel.RefreshToken == null)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status400BadRequest,
+                Code = StatusCodes.Status400BadRequest,
                 Message = "Invalid information"
             };
 
@@ -131,7 +131,7 @@ public class AccountService : IAccountService
         if (refreshToken == null)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status404NotFound,
+                Code = StatusCodes.Status404NotFound,
                 Message = "Device not found"
             };
 
@@ -141,7 +141,7 @@ public class AccountService : IAccountService
         if (principal == null)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status401Unauthorized,
+                Code = StatusCodes.Status401Unauthorized,
                 Message = "Invalid access token"
             };
 
@@ -149,7 +149,7 @@ public class AccountService : IAccountService
         if (string.IsNullOrEmpty(accountIdFromPrincipal) || !Guid.TryParse(accountIdFromPrincipal, out var accountId))
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status401Unauthorized,
+                Code = StatusCodes.Status401Unauthorized,
                 Message = "Invalid account"
             };
 
@@ -159,7 +159,7 @@ public class AccountService : IAccountService
             refreshToken.Token != accountRefreshTokenModel.RefreshToken)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status401Unauthorized,
+                Code = StatusCodes.Status401Unauthorized,
                 Message = "Invalid refresh token"
             };
 
@@ -173,7 +173,7 @@ public class AccountService : IAccountService
 
         return new ResponseModel
         {
-            StatusCode = StatusCodes.Status500InternalServerError,
+            Code = StatusCodes.Status500InternalServerError,
             Message = "Cannot refresh token"
         };
     }
@@ -198,7 +198,7 @@ public class AccountService : IAccountService
         if (account == null)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status404NotFound,
+                Code = StatusCodes.Status404NotFound,
                 Message = "Account not found"
             };
 
@@ -208,10 +208,10 @@ public class AccountService : IAccountService
                 Message = "Email has been verified"
             };
 
-        if (account.VerificationCodeExpiryTime < DateTime.Now)
+        if (account.VerificationCodeExpiryTime < DateTime.UtcNow)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status400BadRequest,
+                Code = StatusCodes.Status400BadRequest,
                 Message = "The code is expired"
             };
 
@@ -230,7 +230,7 @@ public class AccountService : IAccountService
 
         return new ResponseModel
         {
-            StatusCode = StatusCodes.Status400BadRequest,
+            Code = StatusCodes.Status400BadRequest,
             Message = "Cannot verify email"
         };
     }
@@ -241,7 +241,7 @@ public class AccountService : IAccountService
         if (account == null)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status404NotFound,
+                Code = StatusCodes.Status404NotFound,
                 Message = "Account not found"
             };
 
@@ -253,7 +253,7 @@ public class AccountService : IAccountService
 
         // Update new verification code
         account.VerificationCode = AuthenticationTools.GenerateDigitCode(6);
-        account.VerificationCodeExpiryTime = DateTime.Now.AddMinutes(15);
+        account.VerificationCodeExpiryTime = DateTime.UtcNow.AddMinutes(15);
         _unitOfWork.AccountRepository.Update(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
@@ -267,7 +267,7 @@ public class AccountService : IAccountService
 
         return new ResponseModel
         {
-            StatusCode = StatusCodes.Status500InternalServerError,
+            Code = StatusCodes.Status500InternalServerError,
             Message = "Cannot resend verification email"
         };
     }
@@ -289,7 +289,7 @@ public class AccountService : IAccountService
 
         return new ResponseModel
         {
-            StatusCode = StatusCodes.Status500InternalServerError,
+            Code = StatusCodes.Status500InternalServerError,
             Message = "Cannot change password"
         };
     }
@@ -300,11 +300,11 @@ public class AccountService : IAccountService
         if (account == null)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status404NotFound,
+                Code = StatusCodes.Status404NotFound,
                 Message = "Account not found"
             };
 
-        var resetPasswordToken = AuthenticationTools.GenerateUniqueToken(DateTime.Now.AddDays(15));
+        var resetPasswordToken = AuthenticationTools.GenerateUniqueToken(DateTime.UtcNow.AddDays(15));
         account.ResetPasswordToken = resetPasswordToken;
         _unitOfWork.AccountRepository.Update(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
@@ -320,7 +320,7 @@ public class AccountService : IAccountService
 
         return new ResponseModel
         {
-            StatusCode = StatusCodes.Status500InternalServerError,
+            Code = StatusCodes.Status500InternalServerError,
             Message = "Cannot send email"
         };
     }
@@ -331,14 +331,14 @@ public class AccountService : IAccountService
         if (account == null)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status404NotFound,
+                Code = StatusCodes.Status404NotFound,
                 Message = "Account not found"
             };
 
         if (accountResetPasswordModel.Token != account.ResetPasswordToken)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status400BadRequest,
+                Code = StatusCodes.Status400BadRequest,
                 Message = "Invalid token"
             };
 
@@ -353,7 +353,7 @@ public class AccountService : IAccountService
 
         return new ResponseModel
         {
-            StatusCode = StatusCodes.Status500InternalServerError,
+            Code = StatusCodes.Status500InternalServerError,
             Message = "Cannot reset password"
         };
     }
@@ -377,13 +377,13 @@ public class AccountService : IAccountService
         if (result > 0)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status201Created,
+                Code = StatusCodes.Status201Created,
                 Message = $"Add {result / 2} accounts successfully"
             };
 
         return new ResponseModel
         {
-            StatusCode = StatusCodes.Status500InternalServerError,
+            Code = StatusCodes.Status500InternalServerError,
             Message = $"Cannot add {accountSignUpModels.Count} accounts"
         };
     }
@@ -397,7 +397,7 @@ public class AccountService : IAccountService
             if (account == null)
                 return new ResponseModel
                 {
-                    StatusCode = StatusCodes.Status404NotFound,
+                    Code = StatusCodes.Status404NotFound,
                     Message = "Account not found"
                 };
 
@@ -474,7 +474,7 @@ public class AccountService : IAccountService
         if (account == null)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status404NotFound,
+                Code = StatusCodes.Status404NotFound,
                 Message = "Account not found"
             };
 
@@ -493,7 +493,7 @@ public class AccountService : IAccountService
 
         return new ResponseModel
         {
-            StatusCode = StatusCodes.Status500InternalServerError,
+            Code = StatusCodes.Status500InternalServerError,
             Message = "Cannot update account"
         };
     }
@@ -504,7 +504,7 @@ public class AccountService : IAccountService
         if (account == null)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status404NotFound,
+                Code = StatusCodes.Status404NotFound,
                 Message = "Account not found"
             };
 
@@ -523,7 +523,7 @@ public class AccountService : IAccountService
 
         return new ResponseModel
         {
-            StatusCode = StatusCodes.Status500InternalServerError,
+            Code = StatusCodes.Status500InternalServerError,
             Message = "Cannot update account"
         };
     }
@@ -534,7 +534,7 @@ public class AccountService : IAccountService
         if (account == null)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status404NotFound,
+                Code = StatusCodes.Status404NotFound,
                 Message = "Account not found"
             };
 
@@ -552,7 +552,7 @@ public class AccountService : IAccountService
 
         return new ResponseModel
         {
-            StatusCode = StatusCodes.Status500InternalServerError,
+            Code = StatusCodes.Status500InternalServerError,
             Message = "Cannot delete account"
         };
     }
@@ -563,7 +563,7 @@ public class AccountService : IAccountService
         if (account == null)
             return new ResponseModel
             {
-                StatusCode = StatusCodes.Status404NotFound,
+                Code = StatusCodes.Status404NotFound,
                 Message = "Account not found"
             };
 
@@ -581,7 +581,7 @@ public class AccountService : IAccountService
 
         return new ResponseModel
         {
-            StatusCode = StatusCodes.Status500InternalServerError,
+            Code = StatusCodes.Status500InternalServerError,
             Message = "Cannot restore account"
         };
     }
@@ -601,20 +601,23 @@ public class AccountService : IAccountService
         var authClaims = new List<Claim>();
         var deviceId = Guid.NewGuid();
         var refreshTokenString =
-            AuthenticationTools.GenerateUniqueToken(DateTime.Now.AddDays(Constant.RefreshTokenValidityInDays));
+            AuthenticationTools.GenerateUniqueToken(DateTime.UtcNow.AddDays(Constant.RefreshTokenValidityInDays));
+
+        // If refresh token then reuse the claims
         if (refreshToken != null && principal != null)
         {
-            // If refresh token then reuse the claims
             authClaims = principal.Claims.ToList();
             refreshToken.Token = refreshTokenString;
             deviceId = refreshToken.DeviceId;
             _unitOfWork.RefreshTokenRepository.Update(refreshToken);
         }
+
+        // If sign in then add claims
         else
         {
-            // If sign in then add claims
             authClaims.Add(new Claim("accountId", account.Id.ToString()));
             authClaims.Add(new Claim("accountEmail", account.Email));
+            authClaims.Add(new Claim("deviceId", deviceId.ToString()));
             authClaims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
             var roles = await _unitOfWork.RoleRepository.GetAllByAccountIdAsync(account.Id);
             foreach (var role in roles) authClaims.Add(new Claim(ClaimTypes.Role, role.Name));
