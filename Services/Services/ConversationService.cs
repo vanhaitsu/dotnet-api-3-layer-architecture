@@ -128,27 +128,30 @@ public class ConversationService : IConversationService
                     $"{recipientAccountConversation.Account.FirstName} {recipientAccountConversation.Account.LastName}";
                 conversationModel.Image = recipientAccountConversation.Account.Image;
                 conversationModel.IsAllowed =
-                    !recipientAccountConversation.IsDeleted && !recipientAccountConversation.IsDeleted;
+                    !recipientAccountConversation.IsDeleted && !recipientAccountConversation.Account.IsDeleted;
             }
-            else if (conversationModel.Name == null)
+            else
             {
-                string conversationName = "";
-                foreach (var accountConversation in conversation.AccountConversations
-                             .Where(accountConversation => accountConversation.AccountId != currentUserId).Take(5))
+                if (conversationModel.Name == null)
                 {
-                    // Add a comma and space only if this is not the first name
-                    if (!string.IsNullOrEmpty(conversationName))
+                    string conversationName = "";
+                    foreach (var accountConversation in conversation.AccountConversations
+                                 .Where(accountConversation => accountConversation.AccountId != currentUserId &&
+                                                               !accountConversation.IsDeleted &&
+                                                               !accountConversation.Account.IsDeleted).Take(5))
                     {
-                        conversationName += ", ";
-                    }
+                        // Add a comma and space only if this is not the first name
+                        if (!string.IsNullOrEmpty(conversationName))
+                        {
+                            conversationName += ", ";
+                        }
 
-                    if (!accountConversation.IsDeleted && !accountConversation.Account.IsDeleted)
-                    {
                         conversationName += $"{accountConversation.Account.FirstName}";
                     }
+
+                    conversationModel.Name = conversationName;
                 }
 
-                conversationModel.Name = conversationName;
                 conversationModel.IsAllowed = !existedAccountConversation.IsDeleted;
             }
 
