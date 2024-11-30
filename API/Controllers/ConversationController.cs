@@ -30,4 +30,19 @@ public class ConversationController : ControllerBase
             return BadRequest(ex);
         }
     }
+    
+    [Authorize]
+    [HttpGet("{id}")]
+    public async Task<IActionResult> Get(Guid id)
+    {
+        try
+        {
+            var result = await _conversationService.Get(id);
+            return StatusCode(result.Code, result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex);
+        }
+    }
 }

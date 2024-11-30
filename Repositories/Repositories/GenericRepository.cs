@@ -102,7 +102,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         _dbSet.UpdateRange(entities);
     }
 
-    public virtual void SoftDelete(T entity)
+    public virtual void SoftRemove(T entity)
     {
         entity.IsDeleted = true;
         entity.DeletionDate = DateTime.UtcNow;
@@ -110,7 +110,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         _dbSet.Update(entity);
     }
 
-    public virtual void SoftDeleteRange(List<T> entities)
+    public virtual void SoftRemoveRange(List<T> entities)
     {
         foreach (var entity in entities)
         {
@@ -146,12 +146,12 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         _dbSet.UpdateRange(entities);
     }
 
-    public virtual void HardDelete(T entity)
+    public virtual void HardRemove(T entity)
     {
         _dbSet.Remove(entity);
     }
 
-    public virtual void HardDeleteRange(List<T> entities)
+    public virtual void HardRemoveRange(List<T> entities)
     {
         _dbSet.RemoveRange(entities);
     }

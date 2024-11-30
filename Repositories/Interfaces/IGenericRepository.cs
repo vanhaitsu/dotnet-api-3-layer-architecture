@@ -20,10 +20,10 @@ public interface IGenericRepository<T> where T : BaseEntity
 
     void Update(T entity);
     void UpdateRange(List<T> entities);
-    void SoftDelete(T entity);
-    void SoftDeleteRange(List<T> entities);
+    void SoftRemove(T entity);
+    void SoftRemoveRange(List<T> entities);
     void Restore(T entity);
     void RestoreRange(List<T> entities);
-    void HardDelete(T entity);
-    void HardDeleteRange(List<T> entities);
+    void HardRemove(T entity);
+    void HardRemoveRange(List<T> entities);
 }

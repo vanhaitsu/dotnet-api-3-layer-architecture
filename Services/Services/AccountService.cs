@@ -183,7 +183,7 @@ public class AccountService : IAccountService
         var refreshTokens =
             await _unitOfWork.RefreshTokenRepository.GetAllAsync(
                 refreshToken => refreshToken.Account.Email == accountEmailModel.Email);
-        _unitOfWork.RefreshTokenRepository.HardDeleteRange(refreshTokens.Data);
+        _unitOfWork.RefreshTokenRepository.HardRemoveRange(refreshTokens.Data);
         await _unitOfWork.SaveChangeAsync();
 
         return new ResponseModel
@@ -546,7 +546,7 @@ public class AccountService : IAccountService
                 Message = "Account not found"
             };
 
-        _unitOfWork.AccountRepository.SoftDelete(account);
+        _unitOfWork.AccountRepository.SoftRemove(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
             await _redisHelper.InvalidateCacheByPatternAsync($"account_{id}");

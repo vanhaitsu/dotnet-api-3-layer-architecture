@@ -6,4 +6,5 @@ namespace Services.Interfaces;
 public interface IConversationService
 {
     Task<ResponseModel> Add(ConversationAddModel conversationAddModel);
+    Task<ResponseModel> Get(Guid id);
 }
