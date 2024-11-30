@@ -18,7 +18,7 @@ public static class InitialSeeding
     {
         var context = serviceProvider.GetRequiredService<AppDbContext>();
         foreach (var role in Roles)
-            if (!context.Roles.Any(x => x.Name == role.Name))
+            if (!context.Roles.Any(r => r.Name == role.Name))
             {
                 role.CreationDate = DateTime.UtcNow;
                 context.Roles.Add(role);

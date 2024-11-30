@@ -12,6 +12,6 @@ public class RefreshTokenRepository : GenericRepository<RefreshToken>, IRefreshT
 
     public async Task<RefreshToken?> FindByDeviceIdAsync(Guid deviceId)
     {
-        return await _dbSet.FirstOrDefaultAsync(x => x.DeviceId == deviceId);
+        return await _dbSet.FirstOrDefaultAsync(refreshToken => refreshToken.DeviceId == deviceId);
     }
 }

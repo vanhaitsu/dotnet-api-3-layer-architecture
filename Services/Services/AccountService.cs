@@ -182,7 +182,7 @@ public class AccountService : IAccountService
     {
         var refreshTokens =
             await _unitOfWork.RefreshTokenRepository.GetAllAsync(
-                x => x.Account.Email == accountEmailModel.Email);
+                refreshToken => refreshToken.Account.Email == accountEmailModel.Email);
         _unitOfWork.RefreshTokenRepository.HardDeleteRange(refreshTokens.Data);
         await _unitOfWork.SaveChangeAsync();
 
@@ -275,6 +275,13 @@ public class AccountService : IAccountService
     public async Task<ResponseModel> ChangePassword(AccountChangePasswordModel accountChangePasswordModel)
     {
         var currentUserId = _claimService.GetCurrentUserId;
+        if (currentUserId == null)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status401Unauthorized,
+                Message = "Unauthorized"
+            };
+
         var account = await _unitOfWork.AccountRepository.GetAsync(currentUserId!.Value);
         if (AuthenticationTools.VerifyPassword(accountChangePasswordModel.OldPassword, account!.HashedPassword))
         {
@@ -419,35 +426,36 @@ public class AccountService : IAccountService
         var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
         {
             var accounts = await _unitOfWork.AccountRepository.GetAllAsync(
-                x =>
-                    x.IsDeleted == accountFilterModel.IsDeleted &&
-                    (accountFilterModel.Gender == null || x.Gender == accountFilterModel.Gender) &&
-                    (accountFilterModel.Role == null || Enumerable.Select(x.AccountRoles, x => x.Role.Name)
+                account =>
+                    account.IsDeleted == accountFilterModel.IsDeleted &&
+                    (accountFilterModel.Gender == null || account.Gender == accountFilterModel.Gender) &&
+                    (accountFilterModel.Role == null || Enumerable
+                        .Select(account.AccountRoles, accountRole => accountRole.Role.Name)
                         .Contains(accountFilterModel.Role.ToString())) &&
                     (string.IsNullOrEmpty(accountFilterModel.Search) ||
-                     x.FirstName.ToLower().Contains(accountFilterModel.Search.ToLower()) ||
-                     x.LastName.ToLower().Contains(accountFilterModel.Search.ToLower()) ||
-                     x.Email.ToLower().Contains(accountFilterModel.Search.ToLower())),
+                     account.FirstName.ToLower().Contains(accountFilterModel.Search.ToLower()) ||
+                     account.LastName.ToLower().Contains(accountFilterModel.Search.ToLower()) ||
+                     account.Email.ToLower().Contains(accountFilterModel.Search.ToLower())),
                 x =>
                 {
                     switch (accountFilterModel.Order.ToLower())
                     {
                         case "firstName":
                             return accountFilterModel.OrderByDescending
-                                ? x.OrderByDescending(x => x.FirstName)
-                                : x.OrderBy(x => x.FirstName);
+                                ? x.OrderByDescending(account => account.FirstName)
+                                : x.OrderBy(account => account.FirstName);
                         case "lastName":
                             return accountFilterModel.OrderByDescending
-                                ? x.OrderByDescending(x => x.LastName)
-                                : x.OrderBy(x => x.LastName);
+                                ? x.OrderByDescending(account => account.LastName)
+                                : x.OrderBy(account => account.LastName);
                         case "dateOfBirth":
                             return accountFilterModel.OrderByDescending
-                                ? x.OrderByDescending(x => x.DateOfBirth)
-                                : x.OrderBy(x => x.DateOfBirth);
+                                ? x.OrderByDescending(account => account.DateOfBirth)
+                                : x.OrderBy(account => account.DateOfBirth);
                         default:
                             return accountFilterModel.OrderByDescending
-                                ? x.OrderByDescending(x => x.CreationDate)
-                                : x.OrderBy(x => x.CreationDate);
+                                ? x.OrderByDescending(account => account.CreationDate)
+                                : x.OrderBy(account => account.CreationDate);
                     }
                 },
                 "AccountRoles.Role",

@@ -17,6 +17,7 @@ public class RoleRepository : GenericRepository<Role>, IRoleRepository
 
     public async Task<List<Role>> GetAllByAccountIdAsync(Guid accountId)
     {
-        return await _dbSet.Where(x => x.AccountRoles.Any(role => role.AccountId == accountId)).ToListAsync();
+        return await _dbSet.Where(role => role.AccountRoles.Any(accountRole => accountRole.AccountId == accountId))
+            .ToListAsync();
     }
 }

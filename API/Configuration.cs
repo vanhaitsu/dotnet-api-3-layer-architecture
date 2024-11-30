@@ -109,6 +109,7 @@ public static class Configuration
         services.AddScoped<IAccountRoleRepository, AccountRoleRepository>();
 
         // Conversation
+        services.AddScoped<IConversationService, ConversationService>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
 
         // Message

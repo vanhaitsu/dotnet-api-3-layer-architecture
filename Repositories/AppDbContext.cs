@@ -27,23 +27,26 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Account>(entity =>
         {
-            entity.Property(x => x.FirstName).HasMaxLength(50);
-            entity.Property(x => x.LastName).HasMaxLength(50);
-            entity.HasIndex(x => x.Email).IsUnique();
-            entity.Property(x => x.Email).HasMaxLength(256);
-            entity.HasIndex(x => x.Username).IsUnique();
-            entity.Property(x => x.Username).HasMaxLength(50);
-            entity.Property(x => x.PhoneNumber).HasMaxLength(15);
-            entity.Property(x => x.EmailConfirmed).HasDefaultValue(false);
-            entity.Property(x => x.PhoneNumberConfirmed).HasDefaultValue(false);
+            entity.Property(account => account.FirstName).HasMaxLength(50);
+            entity.Property(account => account.LastName).HasMaxLength(50);
+            entity.HasIndex(account => account.Email).IsUnique();
+            entity.Property(account => account.Email).HasMaxLength(256);
+            entity.HasIndex(account => account.Username).IsUnique();
+            entity.Property(account => account.Username).HasMaxLength(50);
+            entity.Property(account => account.PhoneNumber).HasMaxLength(15);
+            entity.Property(account => account.EmailConfirmed).HasDefaultValue(false);
+            entity.Property(account => account.PhoneNumberConfirmed).HasDefaultValue(false);
         });
 
-        modelBuilder.Entity<Conversation>(entity => { entity.Property(x => x.Name).HasMaxLength(50); });
+        modelBuilder.Entity<Conversation>(entity =>
+        {
+            entity.Property(conversation => conversation.Name).HasMaxLength(50);
+        });
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.Property(x => x.Name).HasMaxLength(50);
-            entity.Property(x => x.Description).HasMaxLength(256);
+            entity.Property(role => role.Name).HasMaxLength(50);
+            entity.Property(role => role.Description).HasMaxLength(256);
         });
     }
 }
