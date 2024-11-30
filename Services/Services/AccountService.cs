@@ -428,6 +428,10 @@ public class AccountService : IAccountService
             var accounts = await _unitOfWork.AccountRepository.GetAllAsync(
                 account =>
                     account.IsDeleted == accountFilterModel.IsDeleted &&
+                    (accountFilterModel.ConversationId == null ||
+                     account.AccountConversations.Any(accountConversation =>
+                         accountConversation.ConversationId == accountFilterModel.ConversationId &&
+                         !accountConversation.IsDeleted)) &&
                     (accountFilterModel.Gender == null || account.Gender == accountFilterModel.Gender) &&
                     (accountFilterModel.Role == null || Enumerable
                         .Select(account.AccountRoles, accountRole => accountRole.Role.Name)
