@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Repositories.Entities;
 using Repositories.Interfaces;
-using Repositories.Models.AccountConversationModels;
 using Repositories.Models.ConversationModels;
 using Services.Interfaces;
 using Services.Models.ConversationModels;
@@ -163,5 +162,22 @@ public class ConversationService : IConversationService
         });
 
         return responseModel;
+    }
+
+    public async Task<ResponseModel> GetAll(ConversationFilterModel conversationFilterModel)
+    {
+        var currentUserId = _claimService.GetCurrentUserId;
+        if (currentUserId == null)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status401Unauthorized,
+                Message = "Unauthorized"
+            };
+
+        return new ResponseModel
+        {
+            Code = StatusCodes.Status400BadRequest,
+            Message = "Invalid request"
+        };
     }
 }

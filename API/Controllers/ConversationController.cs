@@ -45,4 +45,18 @@ public class ConversationController : ControllerBase
             return BadRequest(ex);
         }
     }
+    
+    [HttpGet]
+    public async Task<IActionResult> GetAll([FromQuery] ConversationFilterModel conversationFilterModel)
+    {
+        try
+        {
+            var result = await _conversationService.GetAll(conversationFilterModel);
+            return StatusCode(result.Code, result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 }

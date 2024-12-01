@@ -7,4 +7,5 @@ public interface IConversationService
 {
     Task<ResponseModel> Add(ConversationAddModel conversationAddModel);
     Task<ResponseModel> Get(Guid id);
+    Task<ResponseModel> GetAll(ConversationFilterModel conversationFilterModel);
 }

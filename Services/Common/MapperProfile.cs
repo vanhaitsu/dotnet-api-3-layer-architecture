@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Repositories.Entities;
-using Repositories.Models.AccountConversationModels;
 using Repositories.Models.AccountModels;
 using Repositories.Models.ConversationModels;
 using Services.Models.AccountModels;
@@ -21,13 +20,8 @@ public class MapperProfile : Profile
                     Enumerable.Select(src.AccountRoles, accountRole => accountRole.Role.Name).Select(Enum.Parse<Role>)))
             .ForMember(dest => dest.RoleNames,
                 opt => opt.MapFrom(src => Enumerable.Select(src.AccountRoles, accountRole => accountRole.Role.Name)));
-        CreateMap<Account, SimpleAccountModel>();
         CreateMap<AccountUpdateModel, Account>();
-
-        // AccountConversation
-        CreateMap<AccountConversation, AccountConversationModel>()
-            .ForMember(dest => dest.Account, opt => opt.MapFrom(src => src.Account));
-
+        
         // Conversation
         CreateMap<ConversationAddModel, Conversation>();
         CreateMap<Conversation, ConversationModel>()
