@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Repositories.Common;
 using Repositories.Entities;
 using Repositories.Interfaces;
+using Repositories.Models.AccountModels;
 using Repositories.Models.ConversationModels;
 using Services.Interfaces;
 using Services.Models.ConversationModels;
@@ -35,7 +37,7 @@ public class ConversationService : IConversationService
                 Message = "Unauthorized"
             };
 
-        var accountIdWithCurrentUserId = new List<Guid>(conversationAddModel.AccountIds)
+        var accountIdWithCurrentUserId = new List<Guid>(conversationAddModel.AccountIds.Distinct())
         {
             currentUserId.Value
         };
@@ -45,6 +47,13 @@ public class ConversationService : IConversationService
             {
                 Code = StatusCodes.Status400BadRequest,
                 Message = "No account ids provided"
+            };
+
+        if (validAccountIds.Count > Constant.MaxNumberOfMembersInConversation)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status400BadRequest,
+                Message = "Too many accounts"
             };
 
         var existedConversation = await _unitOfWork.ConversationRepository.FindByAccountIdsAsync(validAccountIds);
@@ -58,23 +67,20 @@ public class ConversationService : IConversationService
         var conversation = _mapper.Map<Conversation>(conversationAddModel);
         var accountConversations = new List<AccountConversation>();
         foreach (var accountId in validAccountIds)
-        {
             accountConversations.Add(new AccountConversation
             {
                 IsOwner = accountId == currentUserId,
                 AccountId = accountId,
                 Conversation = conversation
             });
-        }
 
         await _unitOfWork.AccountConversationRepository.AddRangeAsync(accountConversations);
         if (await _unitOfWork.SaveChangeAsync() > 0)
-        {
             return new ResponseModel
             {
+                Code = StatusCodes.Status201Created,
                 Message = "Create conversation successfully"
             };
-        }
 
         return new ResponseModel
         {
@@ -96,62 +102,46 @@ public class ConversationService : IConversationService
         var cacheKey = $"conversation_{id}";
         var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
         {
-            var conversation = await _unitOfWork.ConversationRepository.GetAsync(id, "AccountConversations.Account");
-            if (conversation == null)
+            var accountConversation =
+                await _unitOfWork.AccountConversationRepository.FindByAccountIdAndConversationIdAsync(
+                    currentUserId.Value, id);
+            if (accountConversation == null)
                 return new ResponseModel
                 {
                     Code = StatusCodes.Status404NotFound,
                     Message = "Conversation not found"
                 };
 
-            var existedAccountConversation =
-                conversation.AccountConversations.FirstOrDefault(accountConversation =>
-                    accountConversation.AccountId == currentUserId && !accountConversation.IsDeleted);
-            if (existedAccountConversation == null)
+            var members = await _unitOfWork.AccountConversationRepository.GetAllActiveMembersByConversationIdAsync(id);
+            var conversationModel = _mapper.Map<ConversationModel>(accountConversation.Conversation);
+            conversationModel.IsActive = members.Count >= 2;
+            conversationModel.IsGroup = members.Count > 2;
+            conversationModel.NumberOfMembers = members.Count;
+            conversationModel.Members = _mapper.Map<List<MemberModel>>(members);
+            if (conversationModel.IsActive)
             {
-                return new ResponseModel
+                if (conversationModel.IsGroup && conversationModel.Name == null)
                 {
-                    Code = StatusCodes.Status403Forbidden,
-                    Message = "Cannot get conversation"
-                };
-            }
-
-            var conversationModel = _mapper.Map<ConversationModel>(conversation);
-            conversationModel.IsGroup = conversationModel.NumberOfMembers > 2;
-            if (!conversationModel.IsGroup)
-            {
-                var recipientAccountConversation = conversation.AccountConversations.FirstOrDefault(
-                    accountConversation =>
-                        accountConversation.Account.Id != currentUserId)!;
-                conversationModel.Name =
-                    $"{recipientAccountConversation.Account.FirstName} {recipientAccountConversation.Account.LastName}";
-                conversationModel.Image = recipientAccountConversation.Account.Image;
-                conversationModel.IsAllowed =
-                    !recipientAccountConversation.IsDeleted && !recipientAccountConversation.Account.IsDeleted;
-            }
-            else
-            {
-                if (conversationModel.Name == null)
-                {
-                    string conversationName = "";
-                    foreach (var accountConversation in conversation.AccountConversations
-                                 .Where(accountConversation => accountConversation.AccountId != currentUserId &&
-                                                               !accountConversation.IsDeleted &&
-                                                               !accountConversation.Account.IsDeleted).Take(5))
+                    var conversationName = string.Empty;
+                    foreach (var account in members
+                                 .Where(account =>
+                                     account.Id != currentUserId && !account.IsDeleted && !account.IsDeleted).Take(5))
                     {
                         // Add a comma and space only if this is not the first name
-                        if (!string.IsNullOrEmpty(conversationName))
-                        {
-                            conversationName += ", ";
-                        }
+                        if (!string.IsNullOrWhiteSpace(conversationName)) conversationName += ", ";
 
-                        conversationName += $"{accountConversation.Account.FirstName}";
+                        conversationName += $"{account.FirstName}";
                     }
 
                     conversationModel.Name = conversationName;
                 }
-
-                conversationModel.IsAllowed = !existedAccountConversation.IsDeleted;
+                else
+                {
+                    var recipientAccountConversation = members.FirstOrDefault(account => account.Id != currentUserId)!;
+                    conversationModel.Name =
+                        $"{recipientAccountConversation.FirstName} {recipientAccountConversation.LastName}";
+                    conversationModel.Image = recipientAccountConversation.Image;
+                }
             }
 
             return new ResponseModel
@@ -166,6 +156,44 @@ public class ConversationService : IConversationService
 
     public async Task<ResponseModel> GetAll(ConversationFilterModel conversationFilterModel)
     {
+        // var currentUserId = _claimService.GetCurrentUserId;
+        // if (currentUserId == null)
+        //     return new ResponseModel
+        //     {
+        //         Code = StatusCodes.Status401Unauthorized,
+        //         Message = "Unauthorized"
+        //     };
+        //
+        // var cacheKey = $"conversations_{currentUserId}_{CacheTools.GenerateCacheKey(conversationFilterModel)}";
+        // var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
+        // {
+        //     var accountConversations = await _unitOfWork.AccountConversationRepository.GetAllAsync(
+        //         accountConversation => !accountConversation.IsDeleted &&
+        //                                accountConversation.AccountId == currentUserId &&
+        //                                !accountConversation.Conversation.IsDeleted,
+        //         accountConversations => accountConversations.OrderBy(accountConversation => accountConversation.MessageRecipients),
+        //         "AccountRoles.Role",
+        //         conversationFilterModel.PageIndex,
+        //         conversationFilterModel.PageSize
+        //     );
+        //     var accountModels = _mapper.Map<List<AccountModel>>(accountConversations.Data);
+        //     var result = new Pagination<AccountModel>(accountModels, conversationFilterModel.PageIndex,
+        //         conversationFilterModel.PageSize, accountConversations.TotalCount);
+        //
+        //     return new ResponseModel
+        //     {
+        //         Message = "Get all accounts successfully",
+        //         Data = result
+        //     };
+        // });
+        //
+        // return responseModel;
+
+        return new ResponseModel();
+    }
+
+    public async Task<ResponseModel> GetAllMembers(Guid id)
+    {
         var currentUserId = _claimService.GetCurrentUserId;
         if (currentUserId == null)
             return new ResponseModel
@@ -174,10 +202,19 @@ public class ConversationService : IConversationService
                 Message = "Unauthorized"
             };
 
-        return new ResponseModel
+        var cacheKey = $"conversation/members_{id}";
+        var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
         {
-            Code = StatusCodes.Status400BadRequest,
-            Message = "Invalid request"
-        };
+            var members = await _unitOfWork.AccountConversationRepository.GetAllActiveMembersByConversationIdAsync(id);
+            var membersModel = _mapper.Map<List<MemberModel>>(members);
+
+            return new ResponseModel
+            {
+                Message = "Get all members successfully",
+                Data = membersModel
+            };
+        });
+
+        return responseModel;
     }
 }

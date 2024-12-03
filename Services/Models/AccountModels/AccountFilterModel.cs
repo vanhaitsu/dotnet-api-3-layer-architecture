@@ -5,7 +5,6 @@ namespace Services.Models.AccountModels;
 
 public class AccountFilterModel : FilterParameter
 {
-    public Guid? ConversationId { get; set; }
     public Gender? Gender { get; set; }
     public Role? Role { get; set; }
 

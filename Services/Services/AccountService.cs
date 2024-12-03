@@ -40,19 +40,34 @@ public class AccountService : IAccountService
 
     public async Task<ResponseModel> SignUp(AccountSignUpModel accountSignUpModel)
     {
-        var existedAccount = await _unitOfWork.AccountRepository.FindByEmailAsync(accountSignUpModel.Email);
-        if (existedAccount != null)
+        var existedEmail = await _unitOfWork.AccountRepository.FindByEmailAsync(accountSignUpModel.Email);
+        if (existedEmail != null)
             return new ResponseModel
             {
                 Code = StatusCodes.Status409Conflict,
                 Message = "Email already exists"
             };
 
+        if (!string.IsNullOrWhiteSpace(accountSignUpModel.Username))
+        {
+            var existedUsername = await _unitOfWork.AccountRepository.FindByUsernameAsync(accountSignUpModel.Username);
+            if (existedUsername != null)
+                return new ResponseModel
+                {
+                    Code = StatusCodes.Status409Conflict,
+                    Message = "Username already exists"
+                };
+        }
+        else
+        {
+            accountSignUpModel.Username = AuthenticationTools.GenerateUniqueToken(DateTime.UtcNow)
+                .Replace("/", string.Empty).Replace("+", string.Empty).Replace("-", string.Empty);
+        }
+
         var account = _mapper.Map<Account>(accountSignUpModel);
-        account.Username = accountSignUpModel.Email.ToLower();
         account.HashedPassword = AuthenticationTools.HashPassword(accountSignUpModel.Password);
-        account.VerificationCode = AuthenticationTools.GenerateDigitCode(6);
-        account.VerificationCodeExpiryTime = DateTime.UtcNow.AddMinutes(15);
+        account.VerificationCode = AuthenticationTools.GenerateDigitCode(Constant.VerificationCodeLength);
+        account.VerificationCodeExpiryTime = DateTime.UtcNow.AddMinutes(Constant.VerificationCodeValidityInMinutes);
         await _unitOfWork.AccountRepository.AddAsync(account);
 
         // Add "user" role as default
@@ -64,13 +79,16 @@ public class AccountService : IAccountService
         };
         await _unitOfWork.AccountRoleRepository.AddAsync(accountRole);
         if (await _unitOfWork.SaveChangeAsync() > 0)
+        {
             // Email verification
-            // await SendVerificationEmail(account);
+            await SendVerificationEmail(account);
+
             return new ResponseModel
             {
                 Code = StatusCodes.Status201Created,
                 Message = "Sign up successfully, please verify your email"
             };
+        }
 
         return new ResponseModel
         {
@@ -146,7 +164,8 @@ public class AccountService : IAccountService
             };
 
         var accountIdFromPrincipal = principal.FindFirst("accountId")?.Value;
-        if (string.IsNullOrEmpty(accountIdFromPrincipal) || !Guid.TryParse(accountIdFromPrincipal, out var accountId))
+        if (string.IsNullOrWhiteSpace(accountIdFromPrincipal) ||
+            !Guid.TryParse(accountIdFromPrincipal, out var accountId))
             return new ResponseModel
             {
                 Code = StatusCodes.Status401Unauthorized,
@@ -252,8 +271,8 @@ public class AccountService : IAccountService
             };
 
         // Update new verification code
-        account.VerificationCode = AuthenticationTools.GenerateDigitCode(6);
-        account.VerificationCodeExpiryTime = DateTime.UtcNow.AddMinutes(15);
+        account.VerificationCode = AuthenticationTools.GenerateDigitCode(Constant.VerificationCodeLength);
+        account.VerificationCodeExpiryTime = DateTime.UtcNow.AddMinutes(Constant.VerificationCodeValidityInMinutes);
         _unitOfWork.AccountRepository.Update(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
@@ -282,7 +301,7 @@ public class AccountService : IAccountService
                 Message = "Unauthorized"
             };
 
-        var account = await _unitOfWork.AccountRepository.GetAsync(currentUserId!.Value);
+        var account = await _unitOfWork.AccountRepository.GetAsync(currentUserId.Value);
         if (AuthenticationTools.VerifyPassword(accountChangePasswordModel.OldPassword, account!.HashedPassword))
         {
             account.HashedPassword = AuthenticationTools.HashPassword(accountChangePasswordModel.NewPassword);
@@ -311,13 +330,16 @@ public class AccountService : IAccountService
                 Message = "Account not found"
             };
 
-        var resetPasswordToken = AuthenticationTools.GenerateUniqueToken(DateTime.UtcNow.AddDays(15));
+        var resetPasswordToken =
+            AuthenticationTools.GenerateUniqueToken(
+                DateTime.UtcNow.AddDays(Constant.ResetPasswordTokenValidityInMinutes));
         account.ResetPasswordToken = resetPasswordToken;
         _unitOfWork.AccountRepository.Update(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
             await _emailService.SendEmailAsync(account.Email, "Reset your password",
-                $"Your token is {resetPasswordToken}. The token will expire in 15 minutes.", true);
+                $"Your token is {resetPasswordToken}. The token will expire in {Constant.ResetPasswordTokenValidityInMinutes} minutes.",
+                true);
 
             return new ResponseModel
             {
@@ -370,8 +392,21 @@ public class AccountService : IAccountService
         var accounts = new List<Account>();
         foreach (var accountSignUpModel in accountSignUpModels)
         {
+            if (!string.IsNullOrWhiteSpace(accountSignUpModel.Username))
+            {
+                var existedUsername =
+                    await _unitOfWork.AccountRepository.FindByUsernameAsync(accountSignUpModel.Username);
+                if (existedUsername != null)
+                    accountSignUpModel.Username = AuthenticationTools.GenerateUniqueToken(DateTime.UtcNow)
+                        .Replace("/", string.Empty).Replace("+", string.Empty).Replace("-", string.Empty);
+            }
+            else
+            {
+                accountSignUpModel.Username = AuthenticationTools.GenerateUniqueToken(DateTime.UtcNow)
+                    .Replace("/", string.Empty).Replace("+", string.Empty).Replace("-", string.Empty);
+            }
+
             var account = _mapper.Map<Account>(accountSignUpModel);
-            account.Username = accountSignUpModel.Email.ToLower();
             account.HashedPassword = AuthenticationTools.HashPassword(accountSignUpModel.Password);
             var role = await _unitOfWork.RoleRepository.FindByNameAsync(accountSignUpModel.Role.ToString() ??
                                                                         Role.User.ToString());
@@ -428,38 +463,34 @@ public class AccountService : IAccountService
             var accounts = await _unitOfWork.AccountRepository.GetAllAsync(
                 account =>
                     account.IsDeleted == accountFilterModel.IsDeleted &&
-                    (accountFilterModel.ConversationId == null ||
-                     account.AccountConversations.Any(accountConversation =>
-                         accountConversation.ConversationId == accountFilterModel.ConversationId &&
-                         !accountConversation.IsDeleted)) &&
                     (accountFilterModel.Gender == null || account.Gender == accountFilterModel.Gender) &&
                     (accountFilterModel.Role == null || Enumerable
                         .Select(account.AccountRoles, accountRole => accountRole.Role.Name)
                         .Contains(accountFilterModel.Role.ToString())) &&
-                    (string.IsNullOrEmpty(accountFilterModel.Search) ||
+                    (string.IsNullOrWhiteSpace(accountFilterModel.Search) ||
                      account.FirstName.ToLower().Contains(accountFilterModel.Search.ToLower()) ||
                      account.LastName.ToLower().Contains(accountFilterModel.Search.ToLower()) ||
                      account.Email.ToLower().Contains(accountFilterModel.Search.ToLower())),
-                x =>
+                accounts =>
                 {
                     switch (accountFilterModel.Order.ToLower())
                     {
                         case "firstName":
                             return accountFilterModel.OrderByDescending
-                                ? x.OrderByDescending(account => account.FirstName)
-                                : x.OrderBy(account => account.FirstName);
+                                ? accounts.OrderByDescending(account => account.FirstName)
+                                : accounts.OrderBy(account => account.FirstName);
                         case "lastName":
                             return accountFilterModel.OrderByDescending
-                                ? x.OrderByDescending(account => account.LastName)
-                                : x.OrderBy(account => account.LastName);
+                                ? accounts.OrderByDescending(account => account.LastName)
+                                : accounts.OrderBy(account => account.LastName);
                         case "dateOfBirth":
                             return accountFilterModel.OrderByDescending
-                                ? x.OrderByDescending(account => account.DateOfBirth)
-                                : x.OrderBy(account => account.DateOfBirth);
+                                ? accounts.OrderByDescending(account => account.DateOfBirth)
+                                : accounts.OrderBy(account => account.DateOfBirth);
                         default:
                             return accountFilterModel.OrderByDescending
-                                ? x.OrderByDescending(account => account.CreationDate)
-                                : x.OrderBy(account => account.CreationDate);
+                                ? accounts.OrderByDescending(account => account.CreationDate)
+                                : accounts.OrderBy(account => account.CreationDate);
                     }
                 },
                 "AccountRoles.Role",
@@ -488,6 +519,14 @@ public class AccountService : IAccountService
             {
                 Code = StatusCodes.Status404NotFound,
                 Message = "Account not found"
+            };
+
+        var existedUsername = await _unitOfWork.AccountRepository.FindByUsernameAsync(accountUpdateModel.Username);
+        if (existedUsername != null)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status409Conflict,
+                Message = "Username already exists"
             };
 
         _mapper.Map(accountUpdateModel, account);
@@ -603,7 +642,8 @@ public class AccountService : IAccountService
     private async Task SendVerificationEmail(Account account)
     {
         await _emailService.SendEmailAsync(account.Email, "Verify your email",
-            $"Your verification code is {account.VerificationCode}. The code will expire in 15 minutes.", true);
+            $"Your verification code is {account.VerificationCode}. The code will expire in {Constant.VerificationCodeValidityInMinutes} minutes.",
+            true);
     }
 
     private async Task<TokenModel?> GenerateJwtToken(Account account, RefreshToken? refreshToken = null,

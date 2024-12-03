@@ -43,7 +43,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
                 query = query.Include(includeProperty.Trim());
         var result = await query.FirstOrDefaultAsync(x => x.Id == id);
 
-        // todo: throw exception when result is not found
+        // TODO: Throw exception when result is not found
         return result;
     }
 

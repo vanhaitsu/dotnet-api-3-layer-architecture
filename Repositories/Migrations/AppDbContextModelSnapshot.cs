@@ -98,6 +98,7 @@ namespace Repositories.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Username")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
@@ -499,7 +500,7 @@ namespace Repositories.Migrations
             modelBuilder.Entity("Repositories.Entities.MessageRecipient", b =>
                 {
                     b.HasOne("Repositories.Entities.AccountConversation", "AccountConversation")
-                        .WithMany()
+                        .WithMany("MessageRecipients")
                         .HasForeignKey("AccountConversationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -511,7 +512,7 @@ namespace Repositories.Migrations
                         .IsRequired();
 
                     b.HasOne("Repositories.Entities.Message", "Message")
-                        .WithMany()
+                        .WithMany("MessageRecipients")
                         .HasForeignKey("MessageId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -543,9 +544,19 @@ namespace Repositories.Migrations
                     b.Navigation("RefreshTokens");
                 });
 
+            modelBuilder.Entity("Repositories.Entities.AccountConversation", b =>
+                {
+                    b.Navigation("MessageRecipients");
+                });
+
             modelBuilder.Entity("Repositories.Entities.Conversation", b =>
                 {
                     b.Navigation("AccountConversations");
+                });
+
+            modelBuilder.Entity("Repositories.Entities.Message", b =>
+                {
+                    b.Navigation("MessageRecipients");
                 });
 
             modelBuilder.Entity("Repositories.Entities.Role", b =>

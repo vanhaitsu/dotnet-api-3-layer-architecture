@@ -4,12 +4,12 @@ namespace Services.Common;
 
 public class Pagination<T> where T : BaseEntity
 {
-    public Pagination(List<T> data, int currentPage, int pageSize, int totalPages)
+    public Pagination(List<T> data, int currentPage, int pageSize, int totalCount)
     {
         Data = data;
         CurrentPage = currentPage;
         PageSize = pageSize;
-        TotalPages = (int)Math.Ceiling(totalPages / (double)pageSize);
+        TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
     }
 
     public List<T> Data { get; private set; }

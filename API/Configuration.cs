@@ -31,14 +31,19 @@ public static class Configuration
         });
 
         // Redis
-        services.AddStackExchangeRedisCache(options =>
-        {
-            options.Configuration = configuration["Redis:Configuration"];
-        });
+        var redisConfiguration = configuration["Redis:Configuration"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(redisConfiguration);
+        services.AddStackExchangeRedisCache(options => { options.Configuration = redisConfiguration; });
         services.AddSingleton<IConnectionMultiplexer>(
-            ConnectionMultiplexer.Connect(configuration["Redis:Configuration"]!));
+            ConnectionMultiplexer.Connect(redisConfiguration));
 
         // JWT
+        var secret = configuration["JWT:Secret"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(secret);
+        var issuer = configuration["JWT:ValidIssuer"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(issuer);
+        var audience = configuration["JWT:ValidAudience"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(audience);
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -54,20 +59,22 @@ public static class Configuration
                 ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidAudience = configuration["JWT:ValidAudience"],
-                ValidIssuer = configuration["URL:Server"],
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Secret"]!))
+                ValidIssuer = issuer,
+                ValidAudience = audience,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret))
             };
         });
 
         // CORS
+        var clientUrl = configuration["URL:Client"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(clientUrl);
         services.AddCors(options =>
         {
             options.AddPolicy("cors",
                 corsPolicyBuilder =>
                 {
                     corsPolicyBuilder
-                        .WithOrigins(configuration["URL:Client"]!)
+                        .WithOrigins(clientUrl)
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();

@@ -29,10 +29,10 @@ public class AppDbContext : DbContext
         {
             entity.Property(account => account.FirstName).HasMaxLength(50);
             entity.Property(account => account.LastName).HasMaxLength(50);
-            entity.HasIndex(account => account.Email).IsUnique();
-            entity.Property(account => account.Email).HasMaxLength(256);
             entity.HasIndex(account => account.Username).IsUnique();
             entity.Property(account => account.Username).HasMaxLength(50);
+            entity.HasIndex(account => account.Email).IsUnique();
+            entity.Property(account => account.Email).HasMaxLength(256);
             entity.Property(account => account.PhoneNumber).HasMaxLength(15);
             entity.Property(account => account.EmailConfirmed).HasDefaultValue(false);
             entity.Property(account => account.PhoneNumberConfirmed).HasDefaultValue(false);

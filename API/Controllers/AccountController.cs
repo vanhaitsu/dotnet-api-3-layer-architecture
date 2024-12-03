@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Repositories.Entities;
@@ -17,6 +18,7 @@ public class AccountController : ControllerBase
         _accountService = accountService;
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost("range")]
     public async Task<IActionResult> AddRange([FromBody] List<AccountSignUpModel> accountSignUpModels)
     {

@@ -13,4 +13,5 @@ public class Message : BaseEntity
     // Relationship
     public Account Account { get; set; } = null!;
     public Message? ParentMessage { get; set; }
+    public virtual ICollection<MessageRecipient> MessageRecipients { get; set; } = new List<MessageRecipient>();
 }

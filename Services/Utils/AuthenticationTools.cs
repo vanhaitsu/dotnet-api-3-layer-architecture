@@ -50,12 +50,18 @@ public static class AuthenticationTools
 
     public static JwtSecurityToken CreateJwtToken(List<Claim> authClaims, IConfiguration configuration)
     {
-        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Secret"]!));
+        var secret = configuration["JWT:Secret"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(secret);
+        var issuer = configuration["JWT:ValidIssuer"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(issuer);
+        var audience = configuration["JWT:ValidAudience"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(audience);
+        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
         var token = new JwtSecurityToken(
-            audience: configuration["JWT:ValidAudience"],
-            issuer: configuration["URL:Server"],
+            issuer,
+            audience,
+            authClaims,
             expires: DateTime.UtcNow.AddMinutes(Constant.AccessTokenValidityInMinutes),
-            claims: authClaims,
             signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
         );
 
@@ -66,13 +72,15 @@ public static class AuthenticationTools
     {
         try
         {
+            var secret = configuration["JWT:Secret"];
+            ArgumentException.ThrowIfNullOrWhiteSpace(secret);
             var tokenValidationParameters = new TokenValidationParameters
             {
-                ValidateAudience = false,
                 ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateLifetime = false,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Secret"]!)),
-                ValidateLifetime = false
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret))
             };
             var tokenHandler = new JwtSecurityTokenHandler();
             var principal = tokenHandler.ValidateToken(accessToken, tokenValidationParameters, out var securityToken);

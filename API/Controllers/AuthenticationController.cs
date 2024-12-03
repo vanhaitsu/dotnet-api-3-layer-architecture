@@ -53,15 +53,21 @@ public class AuthenticationController : ControllerBase
 
             // DeviceId
             HttpContext.Request.Cookies.TryGetValue("deviceId", out var deviceIdFromCookie);
-            if (deviceIdFromCookie != null) accountRefreshTokenModel.DeviceId = Guid.Parse(deviceIdFromCookie);
+            if (!string.IsNullOrWhiteSpace(deviceIdFromCookie))
+            {
+                Guid.TryParse(deviceIdFromCookie, out var deviceId);
+                accountRefreshTokenModel.DeviceId = deviceId;
+            }
 
             // Access token
             HttpContext.Request.Cookies.TryGetValue("accessToken", out var accessTokenFromCookie);
-            if (accessTokenFromCookie != null) accountRefreshTokenModel.AccessToken = accessTokenFromCookie;
+            if (!string.IsNullOrWhiteSpace(accessTokenFromCookie))
+                accountRefreshTokenModel.AccessToken = accessTokenFromCookie;
 
             // Refresh token
             HttpContext.Request.Cookies.TryGetValue("refreshToken", out var refreshTokenFromCookie);
-            if (refreshTokenFromCookie != null) accountRefreshTokenModel.RefreshToken = refreshTokenFromCookie;
+            if (!string.IsNullOrWhiteSpace(refreshTokenFromCookie))
+                accountRefreshTokenModel.RefreshToken = refreshTokenFromCookie;
 
             #endregion
 

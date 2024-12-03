@@ -1,6 +1,6 @@
-﻿using System.Text.Json;
-using Microsoft.Extensions.Caching.Distributed;
+﻿using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using Repositories.Common;
 using Services.Interfaces;
 using StackExchange.Redis;
@@ -17,7 +17,8 @@ public class RedisHelper : IRedisHelper
     {
         _distributedCache = distributedCache;
         _connectionMultiplexer = connectionMultiplexer;
-        IsEnabled = bool.Parse(configuration["Redis:IsEnabled"] ?? "false");
+        bool.TryParse(configuration["Redis:IsEnabled"], out var isEnabled);
+        IsEnabled = isEnabled;
     }
 
     private bool IsEnabled { get; }
@@ -30,14 +31,14 @@ public class RedisHelper : IRedisHelper
         {
             // Attempt to get data from the cache
             var cachedData = await _distributedCache.GetStringAsync(cacheKey);
-            if (!string.IsNullOrEmpty(cachedData))
+            if (!string.IsNullOrWhiteSpace(cachedData))
                 // If data exists, deserialize and return it
-                return JsonSerializer.Deserialize<T>(cachedData)!;
+                // TODO: cachedData is deserialized to ResponseModel but its Data field is still a JSON object
+                return JsonConvert.DeserializeObject<T>(cachedData)!;
         }
 
         // Data not in cache; retrieve data from the provided function
         var data = await getData();
-
         if (IsEnabled)
             // Cache the data
             await SetAsync(cacheKey, data, absoluteExpiration, slidingExpiration);
@@ -60,7 +61,8 @@ public class RedisHelper : IRedisHelper
                 AbsoluteExpirationRelativeToNow = absoluteExpiration,
                 SlidingExpiration = slidingExpiration
             };
-            var serializedData = JsonSerializer.Serialize(data);
+            var serializedData = JsonConvert.SerializeObject(data,
+                new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             await _distributedCache.SetStringAsync(cacheKey, serializedData, cacheOptions);
         }
     }

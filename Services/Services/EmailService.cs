@@ -14,19 +14,19 @@ public class EmailService : IEmailService
         _configuration = configuration;
     }
 
-    public Task SendEmailAsync(string toEmail, string subject, string body, bool isBodyHtml)
+    public Task SendEmailAsync(string to, string subject, string body, bool isBodyHtml)
     {
-        var mailServer = _configuration["EmailSettings:MailServer"]!;
-        var fromEmail = _configuration["EmailSettings:FromEmail"]!;
-        var password = _configuration["EmailSettings:Password"]!;
-        var port = int.Parse(_configuration["EmailSettings:MailPort"]!);
-        var client = new SmtpClient(mailServer, port)
+        var host = _configuration["EmailSettings:Host"];
+        int.TryParse(_configuration["EmailSettings:Port"], out var port);
+        var from = _configuration["EmailSettings:From"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(from);
+        var password = _configuration["EmailSettings:Password"];
+        var client = new SmtpClient(host, port)
         {
-            Credentials = new NetworkCredential(fromEmail, password),
+            Credentials = new NetworkCredential(from, password),
             EnableSsl = true
         };
-
-        var mailMessage = new MailMessage(fromEmail, toEmail, subject, body)
+        var mailMessage = new MailMessage(from, to, subject, body)
         {
             IsBodyHtml = isBodyHtml
         };

@@ -30,7 +30,7 @@ public class ConversationController : ControllerBase
             return BadRequest(ex);
         }
     }
-    
+
     [Authorize]
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(Guid id)
@@ -45,7 +45,7 @@ public class ConversationController : ControllerBase
             return BadRequest(ex);
         }
     }
-    
+
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] ConversationFilterModel conversationFilterModel)
     {
@@ -57,6 +57,21 @@ public class ConversationController : ControllerBase
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
+        }
+    }
+
+    [Authorize]
+    [HttpGet("{id}/members")]
+    public async Task<IActionResult> GetAllMembers(Guid id)
+    {
+        try
+        {
+            var result = await _conversationService.GetAllMembers(id);
+            return StatusCode(result.Code, result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex);
         }
     }
 }

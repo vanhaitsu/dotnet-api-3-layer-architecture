@@ -12,4 +12,5 @@ public class AccountConversation : BaseEntity
     // Relationship
     public Account Account { get; set; } = null!;
     public Conversation Conversation { get; set; } = null!;
+    public virtual ICollection<MessageRecipient> MessageRecipients { get; set; } = new List<MessageRecipient>();
 }

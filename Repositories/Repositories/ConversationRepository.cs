@@ -14,7 +14,8 @@ public class ConversationRepository : GenericRepository<Conversation>, IConversa
     {
         return await _dbSet.FirstOrDefaultAsync(conversation =>
             conversation.AccountConversations.Where(accountConversation => !accountConversation.Account.IsDeleted)
-                .Select(x => x.Id).Count() == accountIds.Count &&
-            accountIds.Except(conversation.AccountConversations.Select(x => x.Id)).Any());
+                .Select(accountConversation => accountConversation.Id).Count() == accountIds.Count &&
+            accountIds.Except(conversation.AccountConversations.Select(accountConversation => accountConversation.Id))
+                .Any());
     }
 }

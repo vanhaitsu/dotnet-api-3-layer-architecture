@@ -20,15 +20,11 @@ public class MapperProfile : Profile
                     Enumerable.Select(src.AccountRoles, accountRole => accountRole.Role.Name).Select(Enum.Parse<Role>)))
             .ForMember(dest => dest.RoleNames,
                 opt => opt.MapFrom(src => Enumerable.Select(src.AccountRoles, accountRole => accountRole.Role.Name)));
+        CreateMap<Account, MemberModel>();
         CreateMap<AccountUpdateModel, Account>();
-        
+
         // Conversation
         CreateMap<ConversationAddModel, Conversation>();
-        CreateMap<Conversation, ConversationModel>()
-            .ForMember(dest => dest.NumberOfMembers,
-                opt => opt.MapFrom(src =>
-                    Enumerable.Count(src.AccountConversations,
-                        accountConversation =>
-                            !accountConversation.IsDeleted && !accountConversation.Account.IsDeleted)));
+        CreateMap<Conversation, ConversationModel>();
     }
 }

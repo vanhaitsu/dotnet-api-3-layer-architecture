@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿using Newtonsoft.Json;
 using Repositories.Interfaces;
 using Services.Models.ResponseModels;
 
@@ -34,7 +34,7 @@ public class AccountStatusMiddleware : IMiddleware
                     }
                 };
 
-                var jsonResponse = JsonSerializer.Serialize(response);
+                var jsonResponse = JsonConvert.SerializeObject(response);
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(jsonResponse);

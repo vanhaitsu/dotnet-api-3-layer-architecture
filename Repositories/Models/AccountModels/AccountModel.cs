@@ -9,10 +9,10 @@ public class AccountModel : BaseEntity
     // Required information
     public string FirstName { get; set; } = null!;
     public string LastName { get; set; } = null!;
+    public string Username { get; set; } = null!;
     public string Email { get; set; } = null!;
 
     // Personal information
-    public string? Username { get; set; }
     public Gender? Gender { get; set; }
     public DateOnly? DateOfBirth { get; set; }
     public string? PhoneNumber { get; set; }

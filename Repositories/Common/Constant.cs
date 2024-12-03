@@ -2,10 +2,19 @@
 
 public static class Constant
 {
-    #region JWT
+    #region Conversation
+
+    public const int MaxNumberOfMembersInConversation = 250;
+
+    #endregion
+
+    #region Security
 
     public const int AccessTokenValidityInMinutes = 5;
     public const int RefreshTokenValidityInDays = 7;
+    public const int VerificationCodeValidityInMinutes = 15;
+    public const int VerificationCodeLength = 6;
+    public const int ResetPasswordTokenValidityInMinutes = 15;
 
     #endregion
 
@@ -14,6 +23,9 @@ public static class Constant
     // Default
     public const int DefaultMinPageSize = 10;
     public const int DefaultMaxPageSize = 50;
+
+    // Conversation
+    public const int ConversationMinPageSize = 20;
 
     #endregion
 

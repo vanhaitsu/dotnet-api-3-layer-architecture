@@ -9,7 +9,8 @@ public class ClaimService : IClaimService
     {
         var identity = httpContextAccessor.HttpContext?.User.Identity as ClaimsIdentity;
         var userIdClaim = identity?.FindFirst("accountId");
-        if (userIdClaim != null) GetCurrentUserId = new Guid(userIdClaim.Value);
+        if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var currentUserId))
+            GetCurrentUserId = currentUserId;
     }
 
     public Guid? GetCurrentUserId { get; }
