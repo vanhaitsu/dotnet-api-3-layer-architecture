@@ -46,6 +46,7 @@ public class ConversationController : ControllerBase
         }
     }
 
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] ConversationFilterModel conversationFilterModel)
     {

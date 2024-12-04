@@ -32,8 +32,8 @@ public static class Constant
     #region Cache
 
     // Default
-    public const int DefaultAbsoluteExpirationInMinutes = 20;
-    public const int DefaultSlidingExpirationInMinutes = 5;
+    public const int DefaultAbsoluteExpirationInMinutes = 60;
+    public const int DefaultSlidingExpirationInMinutes = 30;
 
     #endregion
 }

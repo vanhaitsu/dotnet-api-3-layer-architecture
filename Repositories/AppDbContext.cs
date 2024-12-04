@@ -34,8 +34,6 @@ public class AppDbContext : DbContext
             entity.HasIndex(account => account.Email).IsUnique();
             entity.Property(account => account.Email).HasMaxLength(256);
             entity.Property(account => account.PhoneNumber).HasMaxLength(15);
-            entity.Property(account => account.EmailConfirmed).HasDefaultValue(false);
-            entity.Property(account => account.PhoneNumberConfirmed).HasDefaultValue(false);
         });
 
         modelBuilder.Entity<Conversation>(entity =>

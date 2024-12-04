@@ -5,9 +5,12 @@ using Repositories.Entities;
 using Repositories.Interfaces;
 using Repositories.Models.AccountModels;
 using Repositories.Models.ConversationModels;
+using Repositories.Models.MessageModels;
+using Services.Common;
 using Services.Interfaces;
 using Services.Models.ConversationModels;
 using Services.Models.ResponseModels;
+using Services.Utils;
 
 namespace Services.Services;
 
@@ -76,11 +79,13 @@ public class ConversationService : IConversationService
 
         await _unitOfWork.AccountConversationRepository.AddRangeAsync(accountConversations);
         if (await _unitOfWork.SaveChangeAsync() > 0)
+        {
             return new ResponseModel
             {
                 Code = StatusCodes.Status201Created,
                 Message = "Create conversation successfully"
             };
+        }
 
         return new ResponseModel
         {
@@ -99,7 +104,7 @@ public class ConversationService : IConversationService
                 Message = "Unauthorized"
             };
 
-        var cacheKey = $"conversation_{id}";
+        var cacheKey = $"conversation_{id}_account_{currentUserId}";
         var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
         {
             var accountConversation =
@@ -117,15 +122,16 @@ public class ConversationService : IConversationService
             conversationModel.IsActive = members.Count >= 2;
             conversationModel.IsGroup = members.Count > 2;
             conversationModel.NumberOfMembers = members.Count;
-            conversationModel.Members = _mapper.Map<List<MemberModel>>(members);
+            conversationModel.Members =
+                _mapper.Map<List<MemberModel>>(members.Where(account => account.Id != currentUserId)
+                    .OrderBy(account => account.Username).Take(3));
             if (conversationModel.IsActive)
             {
-                if (conversationModel.IsGroup && conversationModel.Name == null)
+                if (conversationModel.IsGroup && accountConversation.Conversation.Name == null)
                 {
                     var conversationName = string.Empty;
-                    foreach (var account in members
-                                 .Where(account =>
-                                     account.Id != currentUserId && !account.IsDeleted && !account.IsDeleted).Take(5))
+                    foreach (var account in members.Where(account => account.Id != currentUserId)
+                                 .OrderBy(account => account.Username).Take(5))
                     {
                         // Add a comma and space only if this is not the first name
                         if (!string.IsNullOrWhiteSpace(conversationName)) conversationName += ", ";
@@ -156,40 +162,96 @@ public class ConversationService : IConversationService
 
     public async Task<ResponseModel> GetAll(ConversationFilterModel conversationFilterModel)
     {
-        // var currentUserId = _claimService.GetCurrentUserId;
-        // if (currentUserId == null)
-        //     return new ResponseModel
-        //     {
-        //         Code = StatusCodes.Status401Unauthorized,
-        //         Message = "Unauthorized"
-        //     };
-        //
-        // var cacheKey = $"conversations_{currentUserId}_{CacheTools.GenerateCacheKey(conversationFilterModel)}";
-        // var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
-        // {
-        //     var accountConversations = await _unitOfWork.AccountConversationRepository.GetAllAsync(
-        //         accountConversation => !accountConversation.IsDeleted &&
-        //                                accountConversation.AccountId == currentUserId &&
-        //                                !accountConversation.Conversation.IsDeleted,
-        //         accountConversations => accountConversations.OrderBy(accountConversation => accountConversation.MessageRecipients),
-        //         "AccountRoles.Role",
-        //         conversationFilterModel.PageIndex,
-        //         conversationFilterModel.PageSize
-        //     );
-        //     var accountModels = _mapper.Map<List<AccountModel>>(accountConversations.Data);
-        //     var result = new Pagination<AccountModel>(accountModels, conversationFilterModel.PageIndex,
-        //         conversationFilterModel.PageSize, accountConversations.TotalCount);
-        //
-        //     return new ResponseModel
-        //     {
-        //         Message = "Get all accounts successfully",
-        //         Data = result
-        //     };
-        // });
-        //
-        // return responseModel;
+        var currentUserId = _claimService.GetCurrentUserId;
+        if (currentUserId == null)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status401Unauthorized,
+                Message = "Unauthorized"
+            };
 
-        return new ResponseModel();
+        var cacheKey = $"conversations_account_{currentUserId}_{CacheTools.GenerateCacheKey(conversationFilterModel)}";
+        var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
+        {
+            var accountConversations = await _unitOfWork.AccountConversationRepository.GetAllAsync(
+                accountConversation => !accountConversation.IsDeleted &&
+                                       accountConversation.AccountId == currentUserId &&
+                                       !accountConversation.Conversation.IsDeleted,
+                accountConversations => accountConversations.OrderBy(accountConversation =>
+                    accountConversation.MessageRecipients
+                        .OrderByDescending(messageRecipient => messageRecipient.CreationDate)
+                        .FirstOrDefault(messageRecipient => messageRecipient.AccountId == currentUserId)),
+                "MessageRecipients.Message, Conversation.AccountConversations.Account",
+                conversationFilterModel.PageIndex,
+                conversationFilterModel.PageSize
+            );
+            var conversationModels = accountConversations.Data.Select(accountConversation =>
+            {
+                var members =
+                    accountConversation.Conversation.AccountConversations.Select(conversation => conversation.Account)
+                        .ToList();
+                var conversationModel = _mapper.Map<ConversationModel>(accountConversation.Conversation);
+                conversationModel.IsActive = members.Count >= 2;
+                conversationModel.IsGroup = members.Count > 2;
+                conversationModel.NumberOfMembers = members.Count;
+                conversationModel.Members =
+                    _mapper.Map<List<MemberModel>>(members.Where(account => account.Id != currentUserId)
+                        .OrderBy(account => account.Username).Take(3));
+                if (conversationModel.IsActive)
+                {
+                    if (conversationModel.IsGroup && accountConversation.Conversation.Name == null)
+                    {
+                        var conversationName = string.Empty;
+                        foreach (var account in members.Where(account => account.Id != currentUserId)
+                                     .OrderBy(account => account.Username).Take(5))
+                        {
+                            // Add a comma and space only if this is not the first name
+                            if (!string.IsNullOrWhiteSpace(conversationName)) conversationName += ", ";
+
+                            conversationName += $"{account.FirstName}";
+                        }
+
+                        conversationModel.Name = conversationName;
+                    }
+                    else
+                    {
+                        var recipientAccountConversation =
+                            members.FirstOrDefault(account => account.Id != currentUserId)!;
+                        conversationModel.Name =
+                            $"{recipientAccountConversation.FirstName} {recipientAccountConversation.LastName}";
+                        conversationModel.Image = recipientAccountConversation.Image;
+                    }
+                }
+
+                conversationModel.NumberOfUnreadMessages = accountConversation.MessageRecipients
+                    .Where(messageRecipient => messageRecipient.AccountId == currentUserId).Count();
+                var latestMessage = accountConversation.MessageRecipients
+                    .OrderByDescending(messageRecipient => messageRecipient.CreationDate)
+                    .FirstOrDefault();
+                if (latestMessage != null)
+                {
+                    conversationModel.LatestMessage = new LatestMessageModel
+                    {
+                        Message = latestMessage.Message.Body,
+                        AccountId = latestMessage.AccountId,
+                        SenderFirstName = latestMessage.Account.FirstName,
+                    };
+                }
+
+                return conversationModel;
+            });
+            var result = new Pagination<ConversationModel>(conversationModels.ToList(),
+                conversationFilterModel.PageIndex,
+                conversationFilterModel.PageSize, accountConversations.TotalCount);
+
+            return new ResponseModel
+            {
+                Message = "Get all conversations successfully",
+                Data = result
+            };
+        });
+
+        return responseModel;
     }
 
     public async Task<ResponseModel> GetAllMembers(Guid id)
@@ -202,7 +264,7 @@ public class ConversationService : IConversationService
                 Message = "Unauthorized"
             };
 
-        var cacheKey = $"conversation/members_{id}";
+        var cacheKey = $"conversation_members_{id}";
         var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
         {
             var members = await _unitOfWork.AccountConversationRepository.GetAllActiveMembersByConversationIdAsync(id);

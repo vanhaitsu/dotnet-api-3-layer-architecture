@@ -19,8 +19,8 @@ public class Account : BaseEntity
     public string? Image { get; set; }
 
     // Status
-    public bool EmailConfirmed { get; set; }
-    public bool PhoneNumberConfirmed { get; set; }
+    public bool EmailConfirmed { get; set; } = false;
+    public bool PhoneNumberConfirmed { get; set; } = false;
 
     // System
     public string? VerificationCode { get; set; }

@@ -82,6 +82,7 @@ public class AccountService : IAccountService
         {
             // Email verification
             await SendVerificationEmail(account);
+            await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
 
             return new ResponseModel
             {
@@ -241,10 +242,16 @@ public class AccountService : IAccountService
             account.VerificationCodeExpiryTime = null;
             _unitOfWork.AccountRepository.Update(account);
             if (await _unitOfWork.SaveChangeAsync() > 0)
+            {
+                await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Id}");
+                await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Username}");
+                await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
+
                 return new ResponseModel
                 {
                     Message = "Verify email successfully"
                 };
+            }
         }
 
         return new ResponseModel
@@ -417,11 +424,15 @@ public class AccountService : IAccountService
         await _unitOfWork.AccountRepository.AddRangeAsync(accounts);
         var result = await _unitOfWork.SaveChangeAsync();
         if (result > 0)
+        {
+            await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
+
             return new ResponseModel
             {
                 Code = StatusCodes.Status201Created,
                 Message = $"Add {result / 2} accounts successfully"
             };
+        }
 
         return new ResponseModel
         {
@@ -479,6 +490,7 @@ public class AccountService : IAccountService
                     (string.IsNullOrWhiteSpace(accountFilterModel.Search) ||
                      account.FirstName.ToLower().Contains(accountFilterModel.Search.ToLower()) ||
                      account.LastName.ToLower().Contains(accountFilterModel.Search.ToLower()) ||
+                     account.Username.ToLower().Contains(accountFilterModel.Search.ToLower()) ||
                      account.Email.ToLower().Contains(accountFilterModel.Search.ToLower())),
                 accounts =>
                 {
@@ -530,13 +542,16 @@ public class AccountService : IAccountService
                 Message = "Account not found"
             };
 
-        var existedUsername = await _unitOfWork.AccountRepository.FindByUsernameAsync(accountUpdateModel.Username);
-        if (existedUsername != null)
-            return new ResponseModel
-            {
-                Code = StatusCodes.Status409Conflict,
-                Message = "Username already exists"
-            };
+        if (accountUpdateModel.Username != account.Username)
+        {
+            var existedUsername = await _unitOfWork.AccountRepository.FindByUsernameAsync(accountUpdateModel.Username);
+            if (existedUsername != null)
+                return new ResponseModel
+                {
+                    Code = StatusCodes.Status409Conflict,
+                    Message = "Username already exists"
+                };
+        }
 
         _mapper.Map(accountUpdateModel, account);
         _unitOfWork.AccountRepository.Update(account);
