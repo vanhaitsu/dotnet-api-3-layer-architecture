@@ -10,14 +10,24 @@ public class AccountRepository : GenericRepository<Account>, IAccountRepository
     {
     }
 
-    public async Task<Account?> FindByEmailAsync(string email)
+    public async Task<Account?> FindByEmailAsync(string email, string? include = "")
     {
-        return await _dbSet.FirstOrDefaultAsync(account => account.Email == email);
+        IQueryable<Account> query = _dbSet;
+        if (!string.IsNullOrWhiteSpace(include))
+            foreach (var includeProperty in include.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                query = query.Include(includeProperty.Trim());
+        
+        return await query.FirstOrDefaultAsync(account => account.Email == email);
     }
 
-    public async Task<Account?> FindByUsernameAsync(string username)
+    public async Task<Account?> FindByUsernameAsync(string username, string? include = "")
     {
-        return await _dbSet.FirstOrDefaultAsync(account => account.Username == username);
+        IQueryable<Account> query = _dbSet;
+        if (!string.IsNullOrWhiteSpace(include))
+            foreach (var includeProperty in include.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                query = query.Include(includeProperty.Trim());
+        
+        return await query.FirstOrDefaultAsync(account => account.Username == username);
     }
 
     public async Task<List<Guid>> GetValidAccountIdsAsync(List<Guid> accountIds)

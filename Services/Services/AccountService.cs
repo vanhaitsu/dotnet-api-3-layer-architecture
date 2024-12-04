@@ -430,12 +430,21 @@ public class AccountService : IAccountService
         };
     }
 
-    public async Task<ResponseModel> Get(Guid id)
+    public async Task<ResponseModel> Get(string identifier)
     {
-        var cacheKey = $"account_{id}";
+        var cacheKey = $"account_{identifier}";
         var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
         {
-            var account = await _unitOfWork.AccountRepository.GetAsync(id, "AccountRoles.Role");
+            Account? account;
+            if (Guid.TryParse(identifier, out Guid id))
+            {
+                account = await _unitOfWork.AccountRepository.GetAsync(id, "AccountRoles.Role");
+            }
+            else
+            {
+                account = await _unitOfWork.AccountRepository.FindByUsernameAsync(identifier, "AccountRoles.Role");
+            }
+
             if (account == null)
                 return new ResponseModel
                 {
@@ -533,7 +542,8 @@ public class AccountService : IAccountService
         _unitOfWork.AccountRepository.Update(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
-            await _redisHelper.InvalidateCacheByPatternAsync($"account_{id}");
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Id}");
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Username}");
             await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
 
             return new ResponseModel
@@ -563,7 +573,8 @@ public class AccountService : IAccountService
         _unitOfWork.AccountRepository.Update(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
-            await _redisHelper.InvalidateCacheByPatternAsync($"account_{id}");
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Id}");
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Username}");
             await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
 
             return new ResponseModel
@@ -592,7 +603,8 @@ public class AccountService : IAccountService
         _unitOfWork.AccountRepository.SoftRemove(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
-            await _redisHelper.InvalidateCacheByPatternAsync($"account_{id}");
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Id}");
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Username}");
             await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
 
             return new ResponseModel
@@ -621,7 +633,8 @@ public class AccountService : IAccountService
         _unitOfWork.AccountRepository.Restore(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
-            await _redisHelper.InvalidateCacheByPatternAsync($"account_{id}");
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Id}");
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Username}");
             await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
 
             return new ResponseModel

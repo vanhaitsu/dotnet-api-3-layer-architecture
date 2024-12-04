@@ -33,12 +33,12 @@ public class AccountController : ControllerBase
         }
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> Get(Guid id)
+    [HttpGet("{identifier}")]
+    public async Task<IActionResult> Get(string identifier)
     {
         try
         {
-            var result = await _accountService.Get(id);
+            var result = await _accountService.Get(identifier);
             return StatusCode(result.Code, result);
         }
         catch (Exception ex)

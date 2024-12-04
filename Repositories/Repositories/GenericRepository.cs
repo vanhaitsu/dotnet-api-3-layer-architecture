@@ -38,13 +38,12 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
     public virtual async Task<T?> GetAsync(Guid id, string? include = "")
     {
         IQueryable<T> query = _dbSet;
-        if (!string.IsNullOrEmpty(include))
+        if (!string.IsNullOrWhiteSpace(include))
             foreach (var includeProperty in include.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                 query = query.Include(includeProperty.Trim());
-        var result = await query.FirstOrDefaultAsync(x => x.Id == id);
-
+        
         // TODO: Throw exception when result is not found
-        return result;
+        return await query.FirstOrDefaultAsync(x => x.Id == id);
     }
 
     public virtual async Task<PaginationResult<List<T>>> GetAllAsync(
@@ -64,7 +63,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         if (order != null) query = order(query);
 
         // Include properties
-        if (!string.IsNullOrEmpty(include))
+        if (!string.IsNullOrWhiteSpace(include))
             foreach (var includeProperty in include.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                 query = query.Include(includeProperty.Trim());
 
