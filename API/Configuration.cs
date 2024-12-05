@@ -120,6 +120,7 @@ public static class Configuration
         services.AddScoped<IConversationRepository, ConversationRepository>();
 
         // Message
+        services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IMessageRepository, MessageRepository>();
 
         // MessageRecipient

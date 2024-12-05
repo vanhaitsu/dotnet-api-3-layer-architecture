@@ -4,6 +4,7 @@ using Repositories.Models.AccountModels;
 using Repositories.Models.ConversationModels;
 using Services.Models.AccountModels;
 using Services.Models.ConversationModels;
+using Services.Models.MessageModels;
 using Role = Repositories.Enums.Role;
 
 namespace Services.Common;
@@ -26,5 +27,8 @@ public class MapperProfile : Profile
         // Conversation
         CreateMap<ConversationAddModel, Conversation>();
         CreateMap<Conversation, ConversationModel>();
+        
+        // Message
+        CreateMap<MessageAddModel, Message>();
     }
 }

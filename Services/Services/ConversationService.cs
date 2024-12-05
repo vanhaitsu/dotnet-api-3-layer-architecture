@@ -233,6 +233,7 @@ public class ConversationService : IConversationService
                     conversationModel.LatestMessage = new LatestMessageModel
                     {
                         Message = latestMessage.Message.Body,
+                        AttachmentUrl = latestMessage.Message.AttachmentUrl,
                         AccountId = latestMessage.AccountId,
                         SenderFirstName = latestMessage.Account.FirstName,
                     };

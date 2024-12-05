@@ -3,7 +3,7 @@
 public class Message : BaseEntity
 {
     public string Body { get; set; } = null!;
-    public string AttachmentUrl { get; set; } = null!;
+    public string? AttachmentUrl { get; set; }
     public bool IsPinned { get; set; } = false;
 
     // Foreign key
