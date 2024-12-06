@@ -17,7 +17,7 @@ public interface IAccountService
     Task<ResponseModel> ForgotPassword(AccountEmailModel accountEmailModel);
     Task<ResponseModel> ResetPassword(AccountResetPasswordModel accountResetPasswordModel);
     Task<ResponseModel> AddRange(List<AccountSignUpModel> accountSignUpModels);
-    Task<ResponseModel> Get(string identifier);
+    Task<ResponseModel> Get(string idOrUsername);
     Task<ResponseModel> GetAll(AccountFilterModel accountFilterModel);
     Task<ResponseModel> UpdatePut(Guid id, AccountUpdateModel accountUpdateModel);
     Task<ResponseModel> UpdatePatch(Guid id, JsonPatchDocument<Account> patchDoc);

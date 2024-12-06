@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 using Services.Models.AccountModels;
+using Services.Models.ResponseModels;
 
 namespace API.Controllers;
 
@@ -26,7 +27,11 @@ public class AuthenticationController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -40,7 +45,11 @@ public class AuthenticationController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -76,7 +85,11 @@ public class AuthenticationController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -91,7 +104,11 @@ public class AuthenticationController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -105,7 +122,11 @@ public class AuthenticationController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -119,7 +140,11 @@ public class AuthenticationController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -134,7 +159,11 @@ public class AuthenticationController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -148,7 +177,11 @@ public class AuthenticationController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -162,7 +195,11 @@ public class AuthenticationController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 }

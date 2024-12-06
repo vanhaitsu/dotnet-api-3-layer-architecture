@@ -16,7 +16,7 @@ public class AccountRepository : GenericRepository<Account>, IAccountRepository
         if (!string.IsNullOrWhiteSpace(include))
             foreach (var includeProperty in include.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                 query = query.Include(includeProperty.Trim());
-        
+
         return await query.FirstOrDefaultAsync(account => account.Email == email);
     }
 
@@ -26,7 +26,7 @@ public class AccountRepository : GenericRepository<Account>, IAccountRepository
         if (!string.IsNullOrWhiteSpace(include))
             foreach (var includeProperty in include.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                 query = query.Include(includeProperty.Trim());
-        
+
         return await query.FirstOrDefaultAsync(account => account.Username == username);
     }
 

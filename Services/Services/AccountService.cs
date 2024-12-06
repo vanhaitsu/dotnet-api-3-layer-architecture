@@ -27,15 +27,15 @@ public class AccountService : IAccountService
     private readonly IRedisHelper _redisHelper;
     private readonly IUnitOfWork _unitOfWork;
 
-    public AccountService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration configuration,
-        IEmailService emailService, IClaimService claimService, IRedisHelper redisHelper)
+    public AccountService(IClaimService claimService, IConfiguration configuration, IEmailService emailService,
+        IMapper mapper, IRedisHelper redisHelper, IUnitOfWork unitOfWork)
     {
-        _unitOfWork = unitOfWork;
-        _mapper = mapper;
+        _claimService = claimService;
         _configuration = configuration;
         _emailService = emailService;
-        _claimService = claimService;
+        _mapper = mapper;
         _redisHelper = redisHelper;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<ResponseModel> SignUp(AccountSignUpModel accountSignUpModel)
@@ -137,8 +137,9 @@ public class AccountService : IAccountService
 
     public async Task<ResponseModel> RefreshToken(AccountRefreshTokenModel accountRefreshTokenModel)
     {
-        if (!accountRefreshTokenModel.DeviceId.HasValue || accountRefreshTokenModel.AccessToken == null ||
-            accountRefreshTokenModel.RefreshToken == null)
+        if (!accountRefreshTokenModel.DeviceId.HasValue ||
+            string.IsNullOrWhiteSpace(accountRefreshTokenModel.AccessToken) ||
+            string.IsNullOrWhiteSpace(accountRefreshTokenModel.RefreshToken))
             return new ResponseModel
             {
                 Code = StatusCodes.Status400BadRequest,
@@ -301,7 +302,7 @@ public class AccountService : IAccountService
     public async Task<ResponseModel> ChangePassword(AccountChangePasswordModel accountChangePasswordModel)
     {
         var currentUserId = _claimService.GetCurrentUserId;
-        if (currentUserId == null)
+        if (!currentUserId.HasValue)
             return new ResponseModel
             {
                 Code = StatusCodes.Status401Unauthorized,
@@ -441,20 +442,16 @@ public class AccountService : IAccountService
         };
     }
 
-    public async Task<ResponseModel> Get(string identifier)
+    public async Task<ResponseModel> Get(string idOrUsername)
     {
-        var cacheKey = $"account_{identifier}";
+        var cacheKey = $"account_{idOrUsername}";
         var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
         {
             Account? account;
-            if (Guid.TryParse(identifier, out Guid id))
-            {
+            if (Guid.TryParse(idOrUsername, out var id))
                 account = await _unitOfWork.AccountRepository.GetAsync(id, "AccountRoles.Role");
-            }
             else
-            {
-                account = await _unitOfWork.AccountRepository.FindByUsernameAsync(identifier, "AccountRoles.Role");
-            }
+                account = await _unitOfWork.AccountRepository.FindByUsernameAsync(idOrUsername, "AccountRoles.Role");
 
             if (account == null)
                 return new ResponseModel
@@ -483,8 +480,8 @@ public class AccountService : IAccountService
             var accounts = await _unitOfWork.AccountRepository.GetAllAsync(
                 account =>
                     account.IsDeleted == accountFilterModel.IsDeleted &&
-                    (accountFilterModel.Gender == null || account.Gender == accountFilterModel.Gender) &&
-                    (accountFilterModel.Role == null || Enumerable
+                    (!accountFilterModel.Gender.HasValue || account.Gender == accountFilterModel.Gender) &&
+                    (!accountFilterModel.Role.HasValue || Enumerable
                         .Select(account.AccountRoles, accountRole => accountRole.Role.Name)
                         .Contains(accountFilterModel.Role.ToString())) &&
                     (string.IsNullOrWhiteSpace(accountFilterModel.Search) ||

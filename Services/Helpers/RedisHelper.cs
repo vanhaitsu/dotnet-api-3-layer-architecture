@@ -11,6 +11,7 @@ public class RedisHelper : IRedisHelper
 {
     private readonly IConnectionMultiplexer _connectionMultiplexer;
     private readonly IDistributedCache _distributedCache;
+    private readonly bool _isEnabled;
 
     public RedisHelper(IDistributedCache distributedCache, IConnectionMultiplexer connectionMultiplexer,
         IConfiguration configuration)
@@ -18,38 +19,13 @@ public class RedisHelper : IRedisHelper
         _distributedCache = distributedCache;
         _connectionMultiplexer = connectionMultiplexer;
         bool.TryParse(configuration["Redis:IsEnabled"], out var isEnabled);
-        IsEnabled = isEnabled;
-    }
-
-    private bool IsEnabled { get; }
-
-    public async Task<T> GetOrSetAsync<T>(string cacheKey, Func<Task<T>> getData,
-        TimeSpan? absoluteExpiration = default,
-        TimeSpan? slidingExpiration = default)
-    {
-        if (IsEnabled)
-        {
-            // Attempt to get data from the cache
-            var cachedData = await _distributedCache.GetStringAsync(cacheKey);
-            if (!string.IsNullOrWhiteSpace(cachedData))
-                // If data exists, deserialize and return it
-                // TODO: cachedData is deserialized to ResponseModel but its Data field is still a JSON object
-                return JsonConvert.DeserializeObject<T>(cachedData)!;
-        }
-
-        // Data not in cache; retrieve data from the provided function
-        var data = await getData();
-        if (IsEnabled)
-            // Cache the data
-            await SetAsync(cacheKey, data, absoluteExpiration, slidingExpiration);
-
-        return data;
+        _isEnabled = isEnabled;
     }
 
     public async Task SetAsync<T>(string cacheKey, T data, TimeSpan? absoluteExpiration = default,
         TimeSpan? slidingExpiration = default)
     {
-        if (IsEnabled)
+        if (_isEnabled)
         {
             // Set default values if they are not provided
             absoluteExpiration ??= TimeSpan.FromMinutes(Constant.DefaultAbsoluteExpirationInMinutes);
@@ -67,9 +43,32 @@ public class RedisHelper : IRedisHelper
         }
     }
 
+    public async Task<T> GetOrSetAsync<T>(string cacheKey, Func<Task<T>> getData,
+        TimeSpan? absoluteExpiration = default,
+        TimeSpan? slidingExpiration = default)
+    {
+        if (_isEnabled)
+        {
+            // Attempt to get data from the cache
+            var cachedData = await _distributedCache.GetStringAsync(cacheKey);
+            if (!string.IsNullOrWhiteSpace(cachedData))
+                // If data exists, deserialize and return it
+                // TODO: cachedData is deserialized to ResponseModel but its Data field is still a JSON object
+                return JsonConvert.DeserializeObject<T>(cachedData)!;
+        }
+
+        // Data not in cache; retrieve data from the provided function
+        var data = await getData();
+        if (_isEnabled)
+            // Cache the data
+            await SetAsync(cacheKey, data, absoluteExpiration, slidingExpiration);
+
+        return data;
+    }
+
     public async Task InvalidateCacheByPatternAsync(string pattern)
     {
-        if (IsEnabled)
+        if (_isEnabled)
         {
             var server = _connectionMultiplexer.GetServer(_connectionMultiplexer.GetEndPoints()[0]);
             foreach (var key in server.Keys(pattern: pattern))

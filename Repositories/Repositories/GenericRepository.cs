@@ -8,19 +8,19 @@ namespace Repositories.Repositories;
 
 public abstract class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
 {
-    private readonly IClaimService _claimService;
+    private readonly Guid? _currentUserId;
     protected DbSet<T> _dbSet;
 
     public GenericRepository(AppDbContext context, IClaimService claimService)
     {
         _dbSet = context.Set<T>();
-        _claimService = claimService;
+        _currentUserId = claimService.GetCurrentUserId;
     }
 
     public virtual async Task AddAsync(T entity)
     {
         entity.CreationDate = DateTime.UtcNow;
-        entity.CreatedBy = _claimService.GetCurrentUserId;
+        entity.CreatedById = _currentUserId;
         await _dbSet.AddAsync(entity);
     }
 
@@ -29,7 +29,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         foreach (var entity in entities)
         {
             entity.CreationDate = DateTime.UtcNow;
-            entity.CreatedBy = _claimService.GetCurrentUserId;
+            entity.CreatedById = _currentUserId;
         }
 
         await _dbSet.AddRangeAsync(entities);
@@ -41,7 +41,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         if (!string.IsNullOrWhiteSpace(include))
             foreach (var includeProperty in include.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                 query = query.Include(includeProperty.Trim());
-        
+
         // TODO: Throw exception when result is not found
         return await query.FirstOrDefaultAsync(x => x.Id == id);
     }
@@ -83,75 +83,100 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         };
     }
 
-    public virtual void Update(T entity)
+    public virtual void Update(T entity, bool? isOwnerRequired = false)
     {
+        ValidateOwner(entity, isOwnerRequired);
         entity.ModificationDate = DateTime.UtcNow;
-        entity.ModifiedBy = _claimService.GetCurrentUserId;
+        entity.ModifiedById = _currentUserId;
         _dbSet.Update(entity);
     }
 
-    public virtual void UpdateRange(List<T> entities)
+    public virtual void UpdateRange(List<T> entities, bool? isOwnerRequired = false)
     {
         foreach (var entity in entities)
         {
+            ValidateOwner(entity, isOwnerRequired);
             entity.ModificationDate = DateTime.UtcNow;
-            entity.ModifiedBy = _claimService.GetCurrentUserId;
+            entity.ModifiedById = _currentUserId;
         }
 
         _dbSet.UpdateRange(entities);
     }
 
-    public virtual void SoftRemove(T entity)
+    public virtual void SoftRemove(T entity, bool? isOwnerRequired = false)
     {
+        ValidateOwner(entity, isOwnerRequired);
         entity.IsDeleted = true;
         entity.DeletionDate = DateTime.UtcNow;
-        entity.DeletedBy = _claimService.GetCurrentUserId;
+        entity.DeletedById = _currentUserId;
         _dbSet.Update(entity);
     }
 
-    public virtual void SoftRemoveRange(List<T> entities)
+    public virtual void SoftRemoveRange(List<T> entities, bool? isOwnerRequired = false)
     {
         foreach (var entity in entities)
         {
+            ValidateOwner(entity, isOwnerRequired);
             entity.IsDeleted = true;
             entity.DeletionDate = DateTime.UtcNow;
-            entity.DeletedBy = _claimService.GetCurrentUserId;
+            entity.DeletedById = _currentUserId;
         }
 
         _dbSet.UpdateRange(entities);
     }
 
-    public virtual void Restore(T entity)
+    public virtual void Restore(T entity, bool? isOwnerRequired = false)
     {
+        ValidateOwner(entity, isOwnerRequired);
         entity.IsDeleted = false;
         entity.DeletionDate = null;
-        entity.DeletedBy = null;
+        entity.DeletedById = null;
         entity.ModificationDate = DateTime.UtcNow;
-        entity.ModifiedBy = _claimService.GetCurrentUserId;
+        entity.ModifiedById = _currentUserId;
         _dbSet.Update(entity);
     }
 
-    public virtual void RestoreRange(List<T> entities)
+    public virtual void RestoreRange(List<T> entities, bool? isOwnerRequired = false)
     {
         foreach (var entity in entities)
         {
+            ValidateOwner(entity, isOwnerRequired);
             entity.IsDeleted = false;
             entity.DeletionDate = null;
-            entity.DeletedBy = null;
+            entity.DeletedById = null;
             entity.ModificationDate = DateTime.UtcNow;
-            entity.ModifiedBy = _claimService.GetCurrentUserId;
+            entity.ModifiedById = _currentUserId;
         }
 
         _dbSet.UpdateRange(entities);
     }
 
-    public virtual void HardRemove(T entity)
+    public virtual void HardRemove(T entity, bool? isOwnerRequired = false)
     {
+        ValidateOwner(entity, isOwnerRequired);
         _dbSet.Remove(entity);
     }
 
-    public virtual void HardRemoveRange(List<T> entities)
+    public virtual void HardRemoveRange(List<T> entities, bool? isOwnerRequired = false)
     {
+        foreach (var entity in entities)
+        {
+            ValidateOwner(entity, isOwnerRequired);
+        }
+        
         _dbSet.RemoveRange(entities);
     }
+
+    # region Helper
+
+    private void ValidateOwner(T entity, bool? isOwnerRequired = false)
+    {
+        if (isOwnerRequired.HasValue && isOwnerRequired.Value && entity.CreatedById.HasValue &&
+            entity.CreatedById != _currentUserId)
+        {
+            throw new UnauthorizedAccessException();
+        }
+    }
+
+    #endregion
 }

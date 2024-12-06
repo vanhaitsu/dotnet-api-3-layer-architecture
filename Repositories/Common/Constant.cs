@@ -4,7 +4,7 @@ public static class Constant
 {
     #region Conversation
 
-    public const int MaxNumberOfMembersInConversation = 250;
+    public const int MaxNumberOfMembersInConversation = 2;
 
     #endregion
 

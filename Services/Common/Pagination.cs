@@ -12,8 +12,8 @@ public class Pagination<T> where T : BaseEntity
         TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
     }
 
-    public List<T> Data { get; private set; }
-    public int CurrentPage { get; private set; }
-    public int PageSize { get; private set; }
-    public int TotalPages { get; private set; }
+    public List<T> Data { get; }
+    public int CurrentPage { get; }
+    public int PageSize { get; }
+    public int TotalPages { get; }
 }

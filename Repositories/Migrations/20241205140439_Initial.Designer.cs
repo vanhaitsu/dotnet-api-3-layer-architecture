@@ -12,7 +12,7 @@ using Repositories;
 namespace Repositories.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20241203131839_Initial")]
+    [Migration("20241205140439_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -34,7 +34,7 @@ namespace Repositories.Migrations
                     b.Property<string>("Address")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("CreatedBy")
+                    b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationDate")
@@ -43,7 +43,7 @@ namespace Repositories.Migrations
                     b.Property<DateOnly?>("DateOfBirth")
                         .HasColumnType("date");
 
-                    b.Property<Guid?>("DeletedBy")
+                    b.Property<Guid?>("DeletedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletionDate")
@@ -55,9 +55,7 @@ namespace Repositories.Migrations
                         .HasColumnType("character varying(256)");
 
                     b.Property<bool>("EmailConfirmed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasColumnType("boolean");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -85,7 +83,7 @@ namespace Repositories.Migrations
                     b.Property<DateTime?>("ModificationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedBy")
+                    b.Property<Guid?>("ModifiedById")
                         .HasColumnType("uuid");
 
                     b.Property<string>("PhoneNumber")
@@ -93,9 +91,7 @@ namespace Repositories.Migrations
                         .HasColumnType("character varying(15)");
 
                     b.Property<bool>("PhoneNumberConfirmed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasColumnType("boolean");
 
                     b.Property<string>("ResetPasswordToken")
                         .HasColumnType("text");
@@ -134,13 +130,13 @@ namespace Repositories.Migrations
                     b.Property<Guid>("ConversationId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CreatedBy")
+                    b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DeletedBy")
+                    b.Property<Guid?>("DeletedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletionDate")
@@ -158,7 +154,7 @@ namespace Repositories.Migrations
                     b.Property<DateTime?>("ModificationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedBy")
+                    b.Property<Guid?>("ModifiedById")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -179,13 +175,13 @@ namespace Repositories.Migrations
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CreatedBy")
+                    b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DeletedBy")
+                    b.Property<Guid?>("DeletedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletionDate")
@@ -197,7 +193,7 @@ namespace Repositories.Migrations
                     b.Property<DateTime?>("ModificationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedBy")
+                    b.Property<Guid?>("ModifiedById")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("RoleId")
@@ -218,13 +214,13 @@ namespace Repositories.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CreatedBy")
+                    b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DeletedBy")
+                    b.Property<Guid?>("DeletedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletionDate")
@@ -242,7 +238,7 @@ namespace Repositories.Migrations
                     b.Property<DateTime?>("ModificationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedBy")
+                    b.Property<Guid?>("ModifiedById")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Name")
@@ -260,24 +256,20 @@ namespace Repositories.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("AttachmentUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Body")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("CreatedBy")
+                    b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DeletedBy")
+                    b.Property<Guid?>("DeletedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletionDate")
@@ -289,10 +281,13 @@ namespace Repositories.Migrations
                     b.Property<bool>("IsPinned")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("MessageType")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("ModificationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedBy")
+                    b.Property<Guid?>("ModifiedById")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("ParentMessageId")
@@ -300,7 +295,7 @@ namespace Repositories.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountId");
+                    b.HasIndex("CreatedById");
 
                     b.HasIndex("ParentMessageId");
 
@@ -319,13 +314,13 @@ namespace Repositories.Migrations
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CreatedBy")
+                    b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DeletedBy")
+                    b.Property<Guid?>("DeletedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletionDate")
@@ -346,7 +341,7 @@ namespace Repositories.Migrations
                     b.Property<DateTime?>("ModificationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedBy")
+                    b.Property<Guid?>("ModifiedById")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -369,13 +364,13 @@ namespace Repositories.Migrations
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CreatedBy")
+                    b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DeletedBy")
+                    b.Property<Guid?>("DeletedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletionDate")
@@ -390,7 +385,7 @@ namespace Repositories.Migrations
                     b.Property<DateTime?>("ModificationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedBy")
+                    b.Property<Guid?>("ModifiedById")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Token")
@@ -410,13 +405,13 @@ namespace Repositories.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CreatedBy")
+                    b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DeletedBy")
+                    b.Property<Guid?>("DeletedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletionDate")
@@ -432,7 +427,7 @@ namespace Repositories.Migrations
                     b.Property<DateTime?>("ModificationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedBy")
+                    b.Property<Guid?>("ModifiedById")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Name")
@@ -485,17 +480,15 @@ namespace Repositories.Migrations
 
             modelBuilder.Entity("Repositories.Entities.Message", b =>
                 {
-                    b.HasOne("Repositories.Entities.Account", "Account")
+                    b.HasOne("Repositories.Entities.Account", "CreatedBy")
                         .WithMany()
-                        .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CreatedById");
 
                     b.HasOne("Repositories.Entities.Message", "ParentMessage")
                         .WithMany()
                         .HasForeignKey("ParentMessageId");
 
-                    b.Navigation("Account");
+                    b.Navigation("CreatedBy");
 
                     b.Navigation("ParentMessage");
                 });

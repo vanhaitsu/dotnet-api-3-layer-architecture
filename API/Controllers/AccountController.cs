@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Repositories.Entities;
 using Services.Interfaces;
 using Services.Models.AccountModels;
+using Services.Models.ResponseModels;
 
 namespace API.Controllers;
 
@@ -29,21 +30,29 @@ public class AccountController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
-    [HttpGet("{identifier}")]
-    public async Task<IActionResult> Get(string identifier)
+    [HttpGet("{idOrUsername}")]
+    public async Task<IActionResult> Get(string idOrUsername)
     {
         try
         {
-            var result = await _accountService.Get(identifier);
+            var result = await _accountService.Get(idOrUsername);
             return StatusCode(result.Code, result);
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -57,7 +66,11 @@ public class AccountController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -71,7 +84,11 @@ public class AccountController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -85,7 +102,11 @@ public class AccountController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -99,7 +120,11 @@ public class AccountController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -113,7 +138,11 @@ public class AccountController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 }

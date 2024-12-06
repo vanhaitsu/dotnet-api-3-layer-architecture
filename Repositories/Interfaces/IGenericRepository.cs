@@ -18,12 +18,12 @@ public interface IGenericRepository<T> where T : BaseEntity
         int? pageSize = null
     );
 
-    void Update(T entity);
-    void UpdateRange(List<T> entities);
-    void SoftRemove(T entity);
-    void SoftRemoveRange(List<T> entities);
-    void Restore(T entity);
-    void RestoreRange(List<T> entities);
-    void HardRemove(T entity);
-    void HardRemoveRange(List<T> entities);
+    void Update(T entity, bool? isOwnerRequired = false);
+    void UpdateRange(List<T> entities, bool? isOwnerRequired = false);
+    void SoftRemove(T entity, bool? isOwnerRequired = false);
+    void SoftRemoveRange(List<T> entities, bool? isOwnerRequired = false);
+    void Restore(T entity, bool? isOwnerRequired = false);
+    void RestoreRange(List<T> entities, bool? isOwnerRequired = false);
+    void HardRemove(T entity, bool? isOwnerRequired = false);
+    void HardRemoveRange(List<T> entities, bool? isOwnerRequired = false);
 }

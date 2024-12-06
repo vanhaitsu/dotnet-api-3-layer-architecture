@@ -4,10 +4,10 @@ public class BaseEntity
 {
     public Guid Id { get; set; }
     public DateTime CreationDate { get; set; } = DateTime.UtcNow;
-    public Guid? CreatedBy { get; set; }
+    public Guid? CreatedById { get; set; }
     public DateTime? ModificationDate { get; set; }
-    public Guid? ModifiedBy { get; set; }
+    public Guid? ModifiedById { get; set; }
     public DateTime? DeletionDate { get; set; }
-    public Guid? DeletedBy { get; set; }
+    public Guid? DeletedById { get; set; }
     public bool IsDeleted { get; set; } = false;
 }

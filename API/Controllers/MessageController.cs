@@ -2,33 +2,37 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 using Services.Models.MessageModels;
+using Services.Models.ResponseModels;
 
-namespace API.Controllers
+namespace API.Controllers;
+
+[Route("api/v1/messages")]
+[ApiController]
+public class MessageController : ControllerBase
 {
-    [Route("api/v1/messages")]
-    [ApiController]
-    public class MessageController : ControllerBase
+    private readonly IMessageService _messageService;
+
+    public MessageController(IMessageService messageService)
     {
-        private readonly IMessageService _messageService;
+        _messageService = messageService;
+    }
 
-        public MessageController(IMessageService messageService)
+    [Authorize]
+    [HttpPost]
+    public async Task<IActionResult> Add([FromBody] MessageAddModel messageAddModel)
+    {
+        try
         {
-            _messageService = messageService;
+            var result = await _messageService.Add(messageAddModel);
+            return StatusCode(result.Code, result);
         }
-
-        [Authorize]
-        [HttpPost]
-        public async Task<IActionResult> Add([FromBody] MessageAddModel messageAddModel)
+        catch (Exception ex)
         {
-            try
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
             {
-                var result = await _messageService.Add(messageAddModel);
-                return StatusCode(result.Code, result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex);
-            }
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 }

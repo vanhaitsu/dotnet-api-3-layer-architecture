@@ -19,7 +19,7 @@ public class AccountStatusMiddleware : IMiddleware
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
         var currentUserId = _claimService.GetCurrentUserId;
-        if (currentUserId != null)
+        if (currentUserId.HasValue)
         {
             var account = await _unitOfWork.AccountRepository.GetAsync(currentUserId.Value);
             if (account != null && account.IsDeleted)
@@ -33,7 +33,6 @@ public class AccountStatusMiddleware : IMiddleware
                         IsDeleted = true
                     }
                 };
-
                 var jsonResponse = JsonConvert.SerializeObject(response);
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 context.Response.ContentType = "application/json";

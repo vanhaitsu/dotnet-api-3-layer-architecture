@@ -1,10 +1,7 @@
 ﻿using AutoMapper;
 using Repositories.Entities;
 using Repositories.Models.AccountModels;
-using Repositories.Models.ConversationModels;
 using Services.Models.AccountModels;
-using Services.Models.ConversationModels;
-using Services.Models.MessageModels;
 using Role = Repositories.Enums.Role;
 
 namespace Services.Common;
@@ -21,14 +18,15 @@ public class MapperProfile : Profile
                     Enumerable.Select(src.AccountRoles, accountRole => accountRole.Role.Name).Select(Enum.Parse<Role>)))
             .ForMember(dest => dest.RoleNames,
                 opt => opt.MapFrom(src => Enumerable.Select(src.AccountRoles, accountRole => accountRole.Role.Name)));
-        CreateMap<Account, MemberModel>();
         CreateMap<AccountUpdateModel, Account>();
 
-        // Conversation
-        CreateMap<ConversationAddModel, Conversation>();
-        CreateMap<Conversation, ConversationModel>();
-        
+        // AccountConversation
+        // CreateMap<AccountConversation, ConversationModel>()
+        //     .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Conversation.Name))
+        //     .ForMember(dest => dest.Image, opt => opt.MapFrom(src => src.Conversation.Image))
+        //     .ForMember(dest => dest.IsRestricted, opt => opt.MapFrom(src => src.Conversation.IsRestricted))
+        //     .ForMember(dest => dest.LatestMessage, opt => opt.MapFrom(src => src.Conversation.IsRestricted))
+
         // Message
-        CreateMap<MessageAddModel, Message>();
     }
 }

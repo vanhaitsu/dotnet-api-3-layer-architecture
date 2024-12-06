@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 using Services.Models.ConversationModels;
+using Services.Models.ResponseModels;
 
 namespace API.Controllers;
 
@@ -27,7 +28,11 @@ public class ConversationController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -42,7 +47,11 @@ public class ConversationController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 
@@ -57,22 +66,11 @@ public class ConversationController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
-        }
-    }
-
-    [Authorize]
-    [HttpGet("{id}/members")]
-    public async Task<IActionResult> GetAllMembers(Guid id)
-    {
-        try
-        {
-            var result = await _conversationService.GetAllMembers(id);
-            return StatusCode(result.Code, result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
         }
     }
 }
