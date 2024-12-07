@@ -159,11 +159,8 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
 
     public virtual void HardRemoveRange(List<T> entities, bool? isOwnerRequired = false)
     {
-        foreach (var entity in entities)
-        {
-            ValidateOwner(entity, isOwnerRequired);
-        }
-        
+        foreach (var entity in entities) ValidateOwner(entity, isOwnerRequired);
+
         _dbSet.RemoveRange(entities);
     }
 
@@ -173,9 +170,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
     {
         if (isOwnerRequired.HasValue && isOwnerRequired.Value && entity.CreatedById.HasValue &&
             entity.CreatedById != _currentUserId)
-        {
             throw new UnauthorizedAccessException();
-        }
     }
 
     #endregion

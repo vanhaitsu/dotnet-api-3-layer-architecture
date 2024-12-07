@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Http;
 using Repositories.Entities;
 using Repositories.Interfaces;
+using Repositories.Models.ConversationModels;
+using Repositories.Models.MessageModels;
 using Services.Interfaces;
 using Services.Models.ConversationModels;
 using Services.Models.ResponseModels;
@@ -45,12 +47,12 @@ public class ConversationService : IConversationService
                 Message = "Conversation already exists"
             };
 
-        var recipient = await _unitOfWork.AccountRepository.GetAsync(conversationAddModel.RecipientId);
-        if (recipient == null)
+        var recipientAccount = await _unitOfWork.AccountRepository.GetAsync(conversationAddModel.RecipientId);
+        if (recipientAccount == null || recipientAccount.IsDeleted)
             return new ResponseModel
             {
                 Code = StatusCodes.Status404NotFound,
-                Message = "Recipient not found"
+                Message = "Recipient account not found"
             };
 
         var conversation = new Conversation
@@ -63,7 +65,7 @@ public class ConversationService : IConversationService
                 },
                 new AccountConversation
                 {
-                    Account = recipient
+                    Account = recipientAccount
                 }
             ])
         };
@@ -84,35 +86,57 @@ public class ConversationService : IConversationService
 
     public async Task<ResponseModel> Get(Guid id)
     {
-        // var currentUserId = _claimService.GetCurrentUserId;
-        // if (!currentUserId.HasValue)
-        //     return new ResponseModel
-        //     {
-        //         Code = StatusCodes.Status401Unauthorized,
-        //         Message = "Unauthorized"
-        //     };
-        //
-        // var cacheKey = $"conversation_{id}_account_{currentUserId}";
-        // var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
-        // {
-        //     var accountConversation =
-        //         await _unitOfWork.AccountConversationRepository.FindAndMapByAccountIdAndConversationIdAsync(
-        //             currentUserId.Value, id);
-        //     if (accountConversation != null)
-        //         return new ResponseModel
-        //         {
-        //             Code = StatusCodes.Status404NotFound,
-        //             Message = "Conversation not found"
-        //         };
-        //
-        //     
-        //
-        //     return new ResponseModel();
-        // });
-        //
-        // return responseModel;
+        var currentUserId = _claimService.GetCurrentUserId;
+        if (!currentUserId.HasValue)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status401Unauthorized,
+                Message = "Unauthorized"
+            };
 
-        return new ResponseModel();
+        var cacheKey = $"conversation_{id}_account_{currentUserId}";
+        var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
+        {
+            var conversation =
+                await _unitOfWork.ConversationRepository.FindByAccountIdAndConversationIdAsync(currentUserId.Value, id);
+            if (conversation == null)
+                return new ResponseModel
+                {
+                    Code = StatusCodes.Status404NotFound,
+                    Message = "Conversation not found"
+                };
+
+            var senderAccountConversations =
+                conversation.AccountConversations.First(accountConversation =>
+                    accountConversation.AccountId == currentUserId);
+            var recipientAccountConversations =
+                conversation.AccountConversations.First(accountConversation =>
+                    accountConversation.AccountId != currentUserId);
+            var latestMessage = senderAccountConversations.MessageRecipients
+                .Select(messageRecipient => messageRecipient.Message).FirstOrDefault();
+            var conversationModel = new ConversationModel
+            {
+                Id = conversation.Id,
+                CreationDate = conversation.CreationDate,
+                IsDeleted = conversation.IsDeleted,
+                Name = recipientAccountConversations.Account.FirstName,
+                Image = recipientAccountConversations.Account.Image,
+                IsRestricted = conversation.IsRestricted,
+                NumberOfUnreadMessages = senderAccountConversations!.MessageRecipients.Count(messageRecipient =>
+                    !messageRecipient.IsRead && !messageRecipient.IsDeleted),
+                IsArchived = senderAccountConversations.IsArchived,
+                IsOwner = senderAccountConversations.IsOwner,
+                LatestMessage = latestMessage == null ? null : _mapper.Map<MessageModel>(latestMessage)
+            };
+
+            return new ResponseModel
+            {
+                Message = "Get conversation successfully",
+                Data = conversationModel
+            };
+        });
+
+        return responseModel;
     }
 
     public async Task<ResponseModel> GetAll(ConversationFilterModel conversationFilterModel)

@@ -9,9 +9,7 @@ public class MessageModel : BaseEntity
     public string? AttachmentUrl { get; set; }
     public MessageType MessageType { get; set; }
     public bool IsPinned { get; set; }
-    public bool IsRead { get; set; }
 
-    // Relationship
-    public Account CreatedBy { get; set; } = null!;
-    public Message? ParentMessage { get; set; }
+    // Foreign key
+    public Guid? ParentMessageId { get; set; }
 }
