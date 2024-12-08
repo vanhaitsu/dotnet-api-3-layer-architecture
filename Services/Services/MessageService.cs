@@ -44,14 +44,24 @@ public class MessageService : IMessageService
             };
 
         var message = _mapper.Map<Message>(messageAddModel);
+        var accountConversations = new List<AccountConversation>();
         foreach (var accountConversation in existedConversation.AccountConversations)
+        {
+            if (accountConversation.IsArchived)
+            {
+                accountConversation.IsArchived = false;
+                accountConversations.Add(accountConversation);
+            }
+
             message.MessageRecipients.Add(new MessageRecipient
             {
                 IsRead = accountConversation.AccountId == currentUserId,
                 AccountId = accountConversation.AccountId,
                 AccountConversationId = accountConversation.Id
             });
+        }
 
+        _unitOfWork.AccountConversationRepository.UpdateRange(accountConversations);
         await _unitOfWork.MessageRepository.AddAsync(message);
         if (await _unitOfWork.SaveChangeAsync() > 0)
             return new ResponseModel
