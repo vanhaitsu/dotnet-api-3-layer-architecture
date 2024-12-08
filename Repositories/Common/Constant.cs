@@ -20,6 +20,9 @@ public static class Constant
 
     // Conversation
     public const int ConversationMaxPageSize = 20;
+    
+    // Message
+    public const int MessageMaxPageSize = 20;
 
     #endregion
 

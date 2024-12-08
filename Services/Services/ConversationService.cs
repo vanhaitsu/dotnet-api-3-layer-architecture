@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Repositories.Entities;
 using Repositories.Interfaces;
+using Repositories.Models.AccountModels;
 using Repositories.Models.ConversationModels;
 using Repositories.Models.MessageModels;
 using Services.Common;
 using Services.Interfaces;
 using Services.Models.ConversationModels;
+using Services.Models.MessageModels;
 using Services.Models.ResponseModels;
 using Services.Utils;
 
@@ -305,5 +307,119 @@ public class ConversationService : IConversationService
             Code = StatusCodes.Status500InternalServerError,
             Message = "Cannot delete conversation"
         };
+    }
+
+    public async Task<ResponseModel> AddMessage(Guid conversationId, MessageAddModel messageAddModel)
+    {
+        var currentUserId = _claimService.GetCurrentUserId;
+        if (!currentUserId.HasValue)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status401Unauthorized,
+                Message = "Unauthorized"
+            };
+
+        var existedConversation =
+            await _unitOfWork.ConversationRepository.FindByAccountIdAndConversationIdAsync(currentUserId.Value,
+                conversationId,
+                conversations => conversations.Include(conversation => conversation.AccountConversations));
+        if (existedConversation == null)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status404NotFound,
+                Message = "Conversation not found"
+            };
+
+        var message = _mapper.Map<Message>(messageAddModel);
+        var accountConversations = new List<AccountConversation>();
+        foreach (var accountConversation in existedConversation.AccountConversations)
+        {
+            if (accountConversation.IsArchived)
+            {
+                accountConversation.IsArchived = false;
+                accountConversations.Add(accountConversation);
+            }
+
+            message.MessageRecipients.Add(new MessageRecipient
+            {
+                IsRead = accountConversation.AccountId == currentUserId,
+                AccountId = accountConversation.AccountId,
+                AccountConversationId = accountConversation.Id
+            });
+        }
+
+        _unitOfWork.AccountConversationRepository.UpdateRange(accountConversations);
+        await _unitOfWork.MessageRepository.AddAsync(message);
+        if (await _unitOfWork.SaveChangeAsync() > 0)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status201Created,
+                Message = "Create message successfully"
+            };
+
+        return new ResponseModel
+        {
+            Code = StatusCodes.Status500InternalServerError,
+            Message = "Cannot create message"
+        };
+    }
+
+    public async Task<ResponseModel> GetAllMessages(Guid conversationId, MessageFilterModel messageFilterModel)
+    {
+        var currentUserId = _claimService.GetCurrentUserId;
+        if (!currentUserId.HasValue)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status401Unauthorized,
+                Message = "Unauthorized"
+            };
+
+        var cacheKey =
+            $"messages_conversation_{conversationId}_account_{currentUserId}_{CacheTools.GenerateCacheKey(messageFilterModel)}";
+        var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
+        {
+            var messages = await _unitOfWork.MessageRepository.GetAllAsync(
+                message => message.MessageRecipients.Any(messageRecipient =>
+                    messageRecipient.AccountId == currentUserId &&
+                    messageRecipient.AccountConversation.ConversationId == conversationId),
+                messages => messages.OrderByDescending(message => message.CreationDate),
+                messages => messages.Include(message => message.CreatedBy)
+                    .Include(message =>
+                        message.MessageRecipients.Where(messageRecipient =>
+                            messageRecipient.AccountId != currentUserId))
+                    .ThenInclude(messageRecipient => messageRecipient.Account),
+                messageFilterModel.PageIndex,
+                messageFilterModel.PageSize
+            );
+            var messageModels = new List<MessageModel>();
+            foreach (var message in messages.Data)
+            {
+                messageModels.Add(new MessageModel
+                {
+                    Id = message.Id,
+                    CreationDate = message.CreationDate,
+                    CreatedById = message.CreatedById,
+                    IsDeleted = message.IsDeleted,
+                    Content = message.Content,
+                    ParentMessageId = message.ParentMessageId,
+                    IsReadBy = _mapper.Map<List<AccountLiteModel>>(
+                        message.MessageRecipients
+                            .Where(messageRecipient =>
+                                messageRecipient.AccountId != message.CreatedById && messageRecipient.IsRead)
+                            .Select(messageRecipient => messageRecipient.Account)),
+                });
+            }
+
+            var result = new Pagination<MessageModel>(messageModels, messageFilterModel.PageIndex,
+                messageFilterModel.PageSize, messages.TotalCount);
+
+            return new ResponseModel
+            {
+                Message = "Get all messages successfully",
+                Data = result
+            };
+        });
+
+        return responseModel;
     }
 }

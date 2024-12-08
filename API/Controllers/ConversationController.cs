@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 using Services.Models.ConversationModels;
+using Services.Models.MessageModels;
 using Services.Models.ResponseModels;
 
 namespace API.Controllers;
@@ -98,6 +99,45 @@ public class ConversationController : ControllerBase
         try
         {
             var result = await _conversationService.Delete(id);
+            return StatusCode(result.Code, result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
+        }
+    }
+    
+    [Authorize]
+    [HttpPost("{conversationId}/messages")]
+    public async Task<IActionResult> AddMessage(Guid conversationId, [FromBody] MessageAddModel messageAddModel)
+    {
+        try
+        {
+            var result = await _conversationService.AddMessage(conversationId, messageAddModel);
+            return StatusCode(result.Code, result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [Authorize]
+    [HttpGet("{conversationId}/messages")]
+    public async Task<IActionResult> GetAllMessages(Guid conversationId,
+        [FromQuery] MessageFilterModel messageFilterModel)
+    {
+        try
+        {
+            var result = await _conversationService.GetAllMessages(conversationId, messageFilterModel);
             return StatusCode(result.Code, result);
         }
         catch (Exception ex)

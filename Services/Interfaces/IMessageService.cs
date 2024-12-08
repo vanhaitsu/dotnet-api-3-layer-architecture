@@ -5,5 +5,5 @@ namespace Services.Interfaces;
 
 public interface IMessageService
 {
-    Task<ResponseModel> Add(MessageAddModel messageAddModel);
+    
 }

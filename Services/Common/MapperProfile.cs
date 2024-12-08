@@ -20,6 +20,7 @@ public class MapperProfile : Profile
                     Enumerable.Select(src.AccountRoles, accountRole => accountRole.Role.Name).Select(Enum.Parse<Role>)))
             .ForMember(dest => dest.RoleNames,
                 opt => opt.MapFrom(src => Enumerable.Select(src.AccountRoles, accountRole => accountRole.Role.Name)));
+        CreateMap<Account, AccountLiteModel>();
         CreateMap<AccountUpdateModel, Account>();
 
         // Message

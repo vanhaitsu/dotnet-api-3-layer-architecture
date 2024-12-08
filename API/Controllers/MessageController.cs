@@ -17,23 +17,4 @@ public class MessageController : ControllerBase
     {
         _messageService = messageService;
     }
-
-    [Authorize]
-    [HttpPost]
-    public async Task<IActionResult> Add([FromBody] MessageAddModel messageAddModel)
-    {
-        try
-        {
-            var result = await _messageService.Add(messageAddModel);
-            return StatusCode(result.Code, result);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
-            {
-                Code = StatusCodes.Status500InternalServerError,
-                Message = ex.Message
-            });
-        }
-    }
 }

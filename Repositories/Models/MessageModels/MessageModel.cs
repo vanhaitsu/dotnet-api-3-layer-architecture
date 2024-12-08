@@ -1,5 +1,6 @@
 ﻿using Repositories.Entities;
 using Repositories.Enums;
+using Repositories.Models.AccountModels;
 
 namespace Repositories.Models.MessageModels;
 
@@ -12,4 +13,7 @@ public class MessageModel : BaseEntity
 
     // Foreign key
     public Guid? ParentMessageId { get; set; }
+    
+    // Relationship
+    public List<AccountLiteModel>? IsReadBy { get; set; }
 }
