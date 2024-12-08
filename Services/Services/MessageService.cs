@@ -45,14 +45,12 @@ public class MessageService : IMessageService
 
         var message = _mapper.Map<Message>(messageAddModel);
         foreach (var accountConversation in existedConversation.AccountConversations)
-        {
-            message.MessageRecipients.Add(new MessageRecipient()
+            message.MessageRecipients.Add(new MessageRecipient
             {
                 IsRead = accountConversation.AccountId == currentUserId,
                 AccountId = accountConversation.AccountId,
                 AccountConversationId = accountConversation.Id
             });
-        }
 
         await _unitOfWork.MessageRepository.AddAsync(message);
         if (await _unitOfWork.SaveChangeAsync() > 0)
