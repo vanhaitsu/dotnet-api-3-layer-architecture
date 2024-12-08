@@ -35,12 +35,10 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         await _dbSet.AddRangeAsync(entities);
     }
 
-    public virtual async Task<T?> GetAsync(Guid id, string? include = "")
+    public virtual async Task<T?> GetAsync(Guid id, Func<IQueryable<T>, IQueryable<T>>? include = null)
     {
         IQueryable<T> query = _dbSet;
-        if (!string.IsNullOrWhiteSpace(include))
-            foreach (var includeProperty in include.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                query = query.Include(includeProperty.Trim());
+        if (include != null) query = include(query);
 
         // TODO: Throw exception when result is not found
         return await query.FirstOrDefaultAsync(x => x.Id == id);
@@ -49,7 +47,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
     public virtual async Task<PaginationResult<List<T>>> GetAllAsync(
         Expression<Func<T, bool>>? filter = null,
         Func<IQueryable<T>, IOrderedQueryable<T>>? order = null,
-        string? include = "",
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
         int? pageIndex = null,
         int? pageSize = null)
     {
@@ -63,9 +61,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         if (order != null) query = order(query);
 
         // Include properties
-        if (!string.IsNullOrWhiteSpace(include))
-            foreach (var includeProperty in include.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                query = query.Include(includeProperty.Trim());
+        if (include != null) query = include(query);
 
         // Pagination
         // If pageIndex and pageSize are both null, return all items

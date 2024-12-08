@@ -3,6 +3,7 @@ using System.Security.Claims;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Repositories.Common;
 using Repositories.Entities;
@@ -449,9 +450,13 @@ public class AccountService : IAccountService
         {
             Account? account;
             if (Guid.TryParse(idOrUsername, out var id))
-                account = await _unitOfWork.AccountRepository.GetAsync(id, "AccountRoles.Role");
+                account = await _unitOfWork.AccountRepository.GetAsync(id, accounts =>
+                    EntityFrameworkQueryableExtensions.ThenInclude(accounts
+                        .Include(a => a.AccountRoles), accountRole => accountRole.Role));
             else
-                account = await _unitOfWork.AccountRepository.FindByUsernameAsync(idOrUsername, "AccountRoles.Role");
+                account = await _unitOfWork.AccountRepository.FindByUsernameAsync(idOrUsername, accounts =>
+                    EntityFrameworkQueryableExtensions.ThenInclude(accounts
+                        .Include(a => a.AccountRoles), accountRole => accountRole.Role));
 
             if (account == null)
                 return new ResponseModel
@@ -511,7 +516,8 @@ public class AccountService : IAccountService
                                 : accounts.OrderBy(account => account.CreationDate);
                     }
                 },
-                "AccountRoles.Role",
+                accounts => EntityFrameworkQueryableExtensions.ThenInclude(
+                    accounts.Include(account => account.AccountRoles), accountRole => accountRole.Role),
                 accountFilterModel.PageIndex,
                 accountFilterModel.PageSize
             );

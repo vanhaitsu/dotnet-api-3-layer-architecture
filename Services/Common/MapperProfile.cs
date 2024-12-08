@@ -3,6 +3,7 @@ using Repositories.Entities;
 using Repositories.Models.AccountModels;
 using Repositories.Models.MessageModels;
 using Services.Models.AccountModels;
+using Services.Models.MessageModels;
 using Role = Repositories.Enums.Role;
 
 namespace Services.Common;
@@ -22,6 +23,7 @@ public class MapperProfile : Profile
         CreateMap<AccountUpdateModel, Account>();
 
         // Message
+        CreateMap<MessageAddModel, Message>();
         CreateMap<Message, MessageModel>();
     }
 }

@@ -10,22 +10,20 @@ public class AccountRepository : GenericRepository<Account>, IAccountRepository
     {
     }
 
-    public async Task<Account?> FindByEmailAsync(string email, string? include = "")
+    public async Task<Account?> FindByEmailAsync(string email,
+        Func<IQueryable<Account>, IQueryable<Account>>? include = null)
     {
         IQueryable<Account> query = _dbSet;
-        if (!string.IsNullOrWhiteSpace(include))
-            foreach (var includeProperty in include.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                query = query.Include(includeProperty.Trim());
+        if (include != null) query = include(query);
 
         return await query.FirstOrDefaultAsync(account => account.Email == email);
     }
 
-    public async Task<Account?> FindByUsernameAsync(string username, string? include = "")
+    public async Task<Account?> FindByUsernameAsync(string username,
+        Func<IQueryable<Account>, IQueryable<Account>>? include = null)
     {
         IQueryable<Account> query = _dbSet;
-        if (!string.IsNullOrWhiteSpace(include))
-            foreach (var includeProperty in include.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                query = query.Include(includeProperty.Trim());
+        if (include != null) query = include(query);
 
         return await query.FirstOrDefaultAsync(account => account.Username == username);
     }

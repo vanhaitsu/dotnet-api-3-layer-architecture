@@ -2,12 +2,6 @@
 
 public static class Constant
 {
-    #region Conversation
-
-    public const int MaxNumberOfMembersInConversation = 2;
-
-    #endregion
-
     #region Security
 
     public const int AccessTokenValidityInMinutes = 5;
@@ -25,7 +19,7 @@ public static class Constant
     public const int DefaultMaxPageSize = 50;
 
     // Conversation
-    public const int ConversationMinPageSize = 20;
+    public const int ConversationMaxPageSize = 20;
 
     #endregion
 

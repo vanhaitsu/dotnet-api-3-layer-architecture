@@ -13,10 +13,10 @@ public class ConversationRepository : GenericRepository<Conversation>, IConversa
     public async Task<Conversation?> FindByAccountIdsAsync(List<Guid> accountIds)
     {
         return await _dbSet.FirstOrDefaultAsync(conversation =>
-            conversation.AccountConversations.Where(accountConversation => !accountConversation.IsDeleted)
-                .Select(accountConversation => accountConversation.Id).Count() == accountIds.Count &&
-            accountIds.Except(conversation.AccountConversations.Select(accountConversation => accountConversation.Id))
-                .Any());
+            conversation.AccountConversations.Count(accountConversation => !accountConversation.IsDeleted) ==
+            accountIds.Count &&
+            !accountIds.Except(
+                conversation.AccountConversations.Select(accountConversation => accountConversation.AccountId)).Any());
     }
 
     public async Task<Conversation?> FindByAccountIdAndConversationIdAsync(Guid accountId, Guid conversationId)
