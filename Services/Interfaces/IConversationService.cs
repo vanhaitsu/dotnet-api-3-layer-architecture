@@ -9,4 +9,5 @@ public interface IConversationService
     Task<ResponseModel> Get(Guid id);
     Task<ResponseModel> GetAll(ConversationFilterModel conversationFilterModel);
     Task<ResponseModel> Archive(Guid id);
+    Task<ResponseModel> Delete(Guid id);
 }

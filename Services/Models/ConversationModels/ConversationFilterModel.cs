@@ -5,7 +5,7 @@ namespace Services.Models.ConversationModels;
 
 public class ConversationFilterModel : FilterParameter
 {
-    public bool? IsArchived { get; set; } = false;
+    public bool? IsArchived { get; set; }
 
     // protected override int MinPageSize { get; set; } = Constant.;
     protected override int MaxPageSize { get; set; } = Constant.ConversationMaxPageSize;

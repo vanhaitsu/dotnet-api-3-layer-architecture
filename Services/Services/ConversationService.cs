@@ -166,7 +166,8 @@ public class ConversationService : IConversationService
                 conversation =>
                     Enumerable.Any(conversation.AccountConversations, accountConversation =>
                         accountConversation.AccountId == currentUserId &&
-                        accountConversation.IsArchived == conversationFilterModel.IsArchived &&
+                        (conversationFilterModel.IsArchived == null ||
+                         accountConversation.IsArchived == conversationFilterModel.IsArchived) &&
                         !accountConversation.IsDeleted &&
                         accountConversation.MessageRecipients.Any(messageRecipient => !messageRecipient.IsDeleted)) &&
                     (string.IsNullOrWhiteSpace(conversationFilterModel.Search) ||
@@ -268,6 +269,41 @@ public class ConversationService : IConversationService
         {
             Code = StatusCodes.Status500InternalServerError,
             Message = "Cannot archive conversation"
+        };
+    }
+
+    public async Task<ResponseModel> Delete(Guid id)
+    {
+        var currentUserId = _claimService.GetCurrentUserId;
+        if (!currentUserId.HasValue)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status401Unauthorized,
+                Message = "Unauthorized"
+            };
+
+        var accountConversation =
+            await _unitOfWork.AccountConversationRepository.FindByAccountIdAndConversationIdAsync(currentUserId.Value,
+                id);
+        if (accountConversation == null)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status404NotFound,
+                Message = "Conversation not found"
+            };
+
+        await _unitOfWork.MessageRecipientRepository.SoftRemoveAllByAccountIdAndAccountConversationIdAsync(
+            currentUserId.Value, accountConversation.Id);
+        if (await _unitOfWork.SaveChangeAsync() > 0)
+            return new ResponseModel
+            {
+                Message = "Delete conversation successfully"
+            };
+
+        return new ResponseModel
+        {
+            Code = StatusCodes.Status500InternalServerError,
+            Message = "Cannot delete conversation"
         };
     }
 }
