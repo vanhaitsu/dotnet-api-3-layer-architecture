@@ -73,4 +73,22 @@ public class ConversationController : ControllerBase
             });
         }
     }
+
+    [HttpPut("{id}/archive")]
+    public async Task<IActionResult> UpdatePut(Guid id)
+    {
+        try
+        {
+            var result = await _conversationService.Archive(id);
+            return StatusCode(result.Code, result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
+        }
+    }
 }

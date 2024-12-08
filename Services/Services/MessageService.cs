@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Repositories.Entities;
 using Repositories.Interfaces;
 using Services.Interfaces;
@@ -35,7 +36,8 @@ public class MessageService : IMessageService
 
         var existedConversation =
             await _unitOfWork.ConversationRepository.FindByAccountIdAndConversationIdAsync(currentUserId.Value,
-                messageAddModel.ConversationId);
+                messageAddModel.ConversationId,
+                conversations => conversations.Include(conversation => conversation.AccountConversations));
         if (existedConversation == null)
             return new ResponseModel
             {

@@ -19,15 +19,14 @@ public class ConversationRepository : GenericRepository<Conversation>, IConversa
                 conversation.AccountConversations.Select(accountConversation => accountConversation.AccountId)).Any());
     }
 
-    public async Task<Conversation?> FindByAccountIdAndConversationIdAsync(Guid accountId, Guid conversationId)
+    public async Task<Conversation?> FindByAccountIdAndConversationIdAsync(Guid accountId, Guid conversationId,
+        Func<IQueryable<Conversation>, IQueryable<Conversation>>? include = null)
     {
-        return await _dbSet.Include(conversation => conversation.AccountConversations)
-            .ThenInclude(accountConversation => accountConversation.Account)
-            .Include(conversation => conversation.AccountConversations).ThenInclude(accountConversation =>
-                accountConversation.MessageRecipients.Where(messageRecipient => !messageRecipient.IsDeleted)
-                    .OrderByDescending(messageRecipient => messageRecipient.Message.CreationDate).Take(6))
-            .ThenInclude(messageRecipient => messageRecipient.Message).FirstOrDefaultAsync(conversation =>
-                conversation.Id == conversationId && conversation.AccountConversations.Any(accountConversation =>
-                    accountConversation.AccountId == accountId && !accountConversation.IsDeleted));
+        IQueryable<Conversation> query = _dbSet;
+        if (include != null) query = include(query);
+
+        return await query.FirstOrDefaultAsync(conversation =>
+            conversation.Id == conversationId && conversation.AccountConversations.Any(accountConversation =>
+                accountConversation.AccountId == accountId && !accountConversation.IsDeleted));
     }
 }

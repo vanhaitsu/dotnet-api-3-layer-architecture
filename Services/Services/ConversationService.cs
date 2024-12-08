@@ -101,7 +101,14 @@ public class ConversationService : IConversationService
         var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
         {
             var conversation =
-                await _unitOfWork.ConversationRepository.FindByAccountIdAndConversationIdAsync(currentUserId.Value, id);
+                await _unitOfWork.ConversationRepository.FindByAccountIdAndConversationIdAsync(currentUserId.Value, id,
+                    conversations => EntityFrameworkQueryableExtensions.ThenInclude(
+                            conversations.Include(conversation => conversation.AccountConversations),
+                            accountConversation => accountConversation.Account)
+                        .Include(conversation => conversation.AccountConversations).ThenInclude(accountConversation =>
+                            accountConversation.MessageRecipients.Where(messageRecipient => !messageRecipient.IsDeleted)
+                                .OrderByDescending(messageRecipient => messageRecipient.Message.CreationDate).Take(6))
+                        .ThenInclude(messageRecipient => messageRecipient.Message));
             if (conversation == null)
                 return new ResponseModel
                 {
@@ -227,5 +234,40 @@ public class ConversationService : IConversationService
         });
 
         return responseModel;
+    }
+
+    public async Task<ResponseModel> Archive(Guid id)
+    {
+        var currentUserId = _claimService.GetCurrentUserId;
+        if (!currentUserId.HasValue)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status401Unauthorized,
+                Message = "Unauthorized"
+            };
+
+        var accountConversation =
+            await _unitOfWork.AccountConversationRepository.FindByAccountIdAndConversationIdAsync(currentUserId.Value,
+                id);
+        if (accountConversation == null)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status404NotFound,
+                Message = "Conversation not found"
+            };
+
+        accountConversation.IsArchived = true;
+        _unitOfWork.AccountConversationRepository.Update(accountConversation);
+        if (await _unitOfWork.SaveChangeAsync() > 0)
+            return new ResponseModel
+            {
+                Message = "Archive conversation successfully"
+            };
+
+        return new ResponseModel
+        {
+            Code = StatusCodes.Status500InternalServerError,
+            Message = "Cannot archive conversation"
+        };
     }
 }

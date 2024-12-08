@@ -44,12 +44,9 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         return await query.FirstOrDefaultAsync(x => x.Id == id);
     }
 
-    public virtual async Task<PaginationResult<List<T>>> GetAllAsync(
-        Expression<Func<T, bool>>? filter = null,
-        Func<IQueryable<T>, IOrderedQueryable<T>>? order = null,
-        Func<IQueryable<T>, IQueryable<T>>? include = null,
-        int? pageIndex = null,
-        int? pageSize = null)
+    public virtual async Task<PaginationResult<List<T>>> GetAllAsync(Expression<Func<T, bool>>? filter = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? order = null, Func<IQueryable<T>, IQueryable<T>>? include = null,
+        int? pageIndex = null, int? pageSize = null)
     {
         IQueryable<T> query = _dbSet;
 
