@@ -385,15 +385,23 @@ public class ConversationService : IConversationService
                     !messageRecipient.IsDeleted),
                 messages => messages.OrderByDescending(message => message.CreationDate),
                 messages => EntityFrameworkQueryableExtensions.Include(messages.Include(message => message.CreatedBy),
-                        message =>
-                            message.MessageRecipients.Where(messageRecipient =>
-                                messageRecipient.AccountId != currentUserId))
+                        message => message.MessageRecipients)
                     .ThenInclude(messageRecipient => messageRecipient.Account),
                 messageFilterModel.PageIndex,
                 messageFilterModel.PageSize
             );
             var messageModels = new List<MessageModel>();
+            var unreadMessages = new List<MessageRecipient>();
             foreach (var message in messages.Data)
+            {
+                var currentUserMessageRecipient =
+                    message.MessageRecipients.First(messageRecipient => messageRecipient.AccountId == currentUserId);
+                if (!currentUserMessageRecipient.IsRead)
+                {
+                    currentUserMessageRecipient.IsRead = true;
+                    unreadMessages.Add(currentUserMessageRecipient);
+                }
+
                 messageModels.Add(new MessageModel
                 {
                     Id = message.Id,
@@ -408,10 +416,23 @@ public class ConversationService : IConversationService
                     ParentMessageId = message.ParentMessageId,
                     IsReadBy = _mapper.Map<List<AccountLiteModel>>(
                         message.MessageRecipients
-                            .Where(messageRecipient =>
-                                messageRecipient.AccountId != message.CreatedById && messageRecipient.IsRead)
+                            .Where(messageRecipient => messageRecipient.AccountId != currentUserId &&
+                                                       messageRecipient.AccountId != message.CreatedById &&
+                                                       messageRecipient.IsRead)
                             .Select(messageRecipient => messageRecipient.Account))
                 });
+            }
+
+            if (unreadMessages.Any())
+            {
+                _unitOfWork.MessageRecipientRepository.UpdateRange(unreadMessages);
+                if (await _unitOfWork.SaveChangeAsync() != unreadMessages.Count)
+                    return new ResponseModel
+                    {
+                        Code = StatusCodes.Status500InternalServerError,
+                        Message = "Cannot get all messages"
+                    };
+            }
 
             var result = new Pagination<MessageModel>(messageModels, messageFilterModel.PageIndex,
                 messageFilterModel.PageSize, messages.TotalCount);
