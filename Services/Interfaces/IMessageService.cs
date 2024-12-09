@@ -5,5 +5,5 @@ namespace Services.Interfaces;
 
 public interface IMessageService
 {
-    
+    Task<ResponseModel> Delete(Guid id, MessageDeleteModel messageDeleteModel);
 }

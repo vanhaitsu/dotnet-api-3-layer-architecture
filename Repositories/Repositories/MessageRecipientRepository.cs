@@ -18,4 +18,10 @@ public class MessageRecipientRepository : GenericRepository<MessageRecipient>, I
             .ToListAsync();
         SoftRemoveRange(messageRecipients);
     }
+
+    public async Task<MessageRecipient?> FindByAccountIdAndMessageIdAsync(Guid accountId, Guid messageId)
+    {
+        return await _dbSet.FirstOrDefaultAsync(messageRecipient =>
+            messageRecipient.AccountId == accountId && messageRecipient.MessageId == messageId);
+    }
 }

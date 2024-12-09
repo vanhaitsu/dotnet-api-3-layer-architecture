@@ -379,36 +379,39 @@ public class ConversationService : IConversationService
         var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
         {
             var messages = await _unitOfWork.MessageRepository.GetAllAsync(
-                message => message.MessageRecipients.Any(messageRecipient =>
+                message => Enumerable.Any(message.MessageRecipients, messageRecipient =>
                     messageRecipient.AccountId == currentUserId &&
-                    messageRecipient.AccountConversation.ConversationId == conversationId),
+                    messageRecipient.AccountConversation.ConversationId == conversationId &&
+                    !messageRecipient.IsDeleted),
                 messages => messages.OrderByDescending(message => message.CreationDate),
-                messages => messages.Include(message => message.CreatedBy)
-                    .Include(message =>
-                        message.MessageRecipients.Where(messageRecipient =>
-                            messageRecipient.AccountId != currentUserId))
+                messages => EntityFrameworkQueryableExtensions.Include(messages.Include(message => message.CreatedBy),
+                        message =>
+                            message.MessageRecipients.Where(messageRecipient =>
+                                messageRecipient.AccountId != currentUserId))
                     .ThenInclude(messageRecipient => messageRecipient.Account),
                 messageFilterModel.PageIndex,
                 messageFilterModel.PageSize
             );
             var messageModels = new List<MessageModel>();
             foreach (var message in messages.Data)
-            {
                 messageModels.Add(new MessageModel
                 {
                     Id = message.Id,
                     CreationDate = message.CreationDate,
                     CreatedById = message.CreatedById,
                     IsDeleted = message.IsDeleted,
-                    Content = message.Content,
+                    Content = message.IsDeleted ? null : message.Content,
+                    AttachmentUrl = message.IsDeleted ? null : message.AttachmentUrl,
+                    MessageType = message.MessageType,
+                    IsPinned = message.IsPinned,
+                    IsModified = message.ModificationDate != null || message.ModifiedById != null,
                     ParentMessageId = message.ParentMessageId,
                     IsReadBy = _mapper.Map<List<AccountLiteModel>>(
                         message.MessageRecipients
                             .Where(messageRecipient =>
                                 messageRecipient.AccountId != message.CreatedById && messageRecipient.IsRead)
-                            .Select(messageRecipient => messageRecipient.Account)),
+                            .Select(messageRecipient => messageRecipient.Account))
                 });
-            }
 
             var result = new Pagination<MessageModel>(messageModels, messageFilterModel.PageIndex,
                 messageFilterModel.PageSize, messages.TotalCount);

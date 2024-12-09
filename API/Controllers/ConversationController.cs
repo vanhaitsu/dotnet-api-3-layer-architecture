@@ -76,7 +76,7 @@ public class ConversationController : ControllerBase
     }
 
     [HttpPut("{id}/archive")]
-    public async Task<IActionResult> UpdatePut(Guid id)
+    public async Task<IActionResult> Archive(Guid id)
     {
         try
         {
@@ -110,7 +110,7 @@ public class ConversationController : ControllerBase
             });
         }
     }
-    
+
     [Authorize]
     [HttpPost("{conversationId}/messages")]
     public async Task<IActionResult> AddMessage(Guid conversationId, [FromBody] MessageAddModel messageAddModel)
