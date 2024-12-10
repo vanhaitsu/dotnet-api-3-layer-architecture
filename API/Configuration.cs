@@ -63,6 +63,18 @@ public static class Configuration
                 ValidAudience = audience,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret))
             };
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+                    if (!string.IsNullOrWhiteSpace(accessToken) && path.StartsWithSegments("/hub"))
+                        context.Token = accessToken;
+
+                    return Task.CompletedTask;
+                }
+            };
         });
 
         // CORS

@@ -8,8 +8,8 @@ public class ClaimService : IClaimService
     public ClaimService(IHttpContextAccessor httpContextAccessor)
     {
         var identity = httpContextAccessor.HttpContext?.User.Identity as ClaimsIdentity;
-        var userIdClaim = identity?.FindFirst("accountId");
-        if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var currentUserId))
+        var accountIdClaim = identity?.FindFirst("accountId");
+        if (accountIdClaim != null && Guid.TryParse(accountIdClaim.Value, out var currentUserId))
             GetCurrentUserId = currentUserId;
     }
 

@@ -1,9 +1,9 @@
 using API;
-using API.Hubs;
 using API.Middlewares;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Repositories.Common;
+using Services.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
     // Enable JsonPatchDocument for PATCH endpoint and ignore all null values in response
     .AddNewtonsoftJson(options => { options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore; });
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options => { options.MaximumReceiveMessageSize = null; });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -76,6 +76,6 @@ app.UseAuthorization();
 app.UseMiddleware<AccountStatusMiddleware>();
 
 app.MapControllers();
-app.MapHub<ChatHub>("/chat");
+app.MapHub<RealTimeHub>("/hub");
 
 app.Run();

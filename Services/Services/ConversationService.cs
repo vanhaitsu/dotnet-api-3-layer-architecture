@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Repositories.Entities;
 using Repositories.Interfaces;
@@ -7,6 +8,7 @@ using Repositories.Models.AccountModels;
 using Repositories.Models.ConversationModels;
 using Repositories.Models.MessageModels;
 using Services.Common;
+using Services.Hubs;
 using Services.Interfaces;
 using Services.Models.ConversationModels;
 using Services.Models.MessageModels;
@@ -18,17 +20,20 @@ namespace Services.Services;
 public class ConversationService : IConversationService
 {
     private readonly IClaimService _claimService;
+    private readonly ConnectionMapping<Guid> _connections = new();
+    private readonly IHubContext<RealTimeHub> _hubContext;
     private readonly IMapper _mapper;
     private readonly IRedisHelper _redisHelper;
     private readonly IUnitOfWork _unitOfWork;
 
-    public ConversationService(IClaimService claimService, IMapper mapper, IRedisHelper redisHelper,
-        IUnitOfWork unitOfWork)
+    public ConversationService(IClaimService claimService, IMapper mapper,
+        IRedisHelper redisHelper, IUnitOfWork unitOfWork, IHubContext<RealTimeHub> hubContext)
     {
         _claimService = claimService;
         _mapper = mapper;
         _redisHelper = redisHelper;
         _unitOfWork = unitOfWork;
+        _hubContext = hubContext;
     }
 
     public async Task<ResponseModel> Add(ConversationAddModel conversationAddModel)
@@ -322,7 +327,9 @@ public class ConversationService : IConversationService
         var existedConversation =
             await _unitOfWork.ConversationRepository.FindByAccountIdAndConversationIdAsync(currentUserId.Value,
                 conversationId,
-                conversations => conversations.Include(conversation => conversation.AccountConversations));
+                conversations => EntityFrameworkQueryableExtensions.ThenInclude(
+                    conversations.Include(conversation => conversation.AccountConversations),
+                    accountConversation => accountConversation.Account));
         if (existedConversation == null)
             return new ResponseModel
             {
@@ -351,11 +358,18 @@ public class ConversationService : IConversationService
         _unitOfWork.AccountConversationRepository.UpdateRange(accountConversations);
         await _unitOfWork.MessageRepository.AddAsync(message);
         if (await _unitOfWork.SaveChangeAsync() > 0)
+        {
+            await _hubContext.Clients
+                .Clients(_connections.GetConnections(message.MessageRecipients
+                    .Select(messageRecipient => messageRecipient.AccountId).ToList())).SendAsync("ReceiveMessage",
+                    MapFromMessageToMessageModel(message, currentUserId));
+
             return new ResponseModel
             {
                 Code = StatusCodes.Status201Created,
                 Message = "Create message successfully"
             };
+        }
 
         return new ResponseModel
         {
@@ -402,25 +416,7 @@ public class ConversationService : IConversationService
                     unreadMessages.Add(currentUserMessageRecipient);
                 }
 
-                messageModels.Add(new MessageModel
-                {
-                    Id = message.Id,
-                    CreationDate = message.CreationDate,
-                    CreatedById = message.CreatedById,
-                    IsDeleted = message.IsDeleted,
-                    Content = message.IsDeleted ? null : message.Content,
-                    AttachmentUrl = message.IsDeleted ? null : message.AttachmentUrl,
-                    MessageType = message.MessageType,
-                    IsPinned = message.IsPinned,
-                    IsModified = message.ModificationDate != null || message.ModifiedById != null,
-                    ParentMessageId = message.ParentMessageId,
-                    IsReadBy = _mapper.Map<List<AccountLiteModel>>(
-                        message.MessageRecipients
-                            .Where(messageRecipient => messageRecipient.AccountId != currentUserId &&
-                                                       messageRecipient.AccountId != message.CreatedById &&
-                                                       messageRecipient.IsRead)
-                            .Select(messageRecipient => messageRecipient.Account))
-                });
+                messageModels.Add(MapFromMessageToMessageModel(message, currentUserId));
             }
 
             if (unreadMessages.Any())
@@ -446,4 +442,38 @@ public class ConversationService : IConversationService
 
         return responseModel;
     }
+
+    #region Helper
+
+    /// <summary>
+    ///     Custom mapping from Message to MessageModel
+    /// </summary>
+    /// <param name="message">Must include MessageRecipient then include Account</param>
+    /// <param name="currentUserId">This id will not be contained in the IsReadBy list</param>
+    /// <returns></returns>
+    private MessageModel MapFromMessageToMessageModel(Message message, Guid? currentUserId = null)
+    {
+        return new MessageModel
+        {
+            Id = message.Id,
+            CreationDate = message.CreationDate,
+            CreatedById = message.CreatedById,
+            IsDeleted = message.IsDeleted,
+            Content = message.IsDeleted ? null : message.Content,
+            AttachmentUrl = message.IsDeleted ? null : message.AttachmentUrl,
+            MessageType = message.MessageType,
+            IsPinned = message.IsPinned,
+            IsModified = message.ModificationDate != null || message.ModifiedById != null,
+            ParentMessageId = message.ParentMessageId,
+            IsReadBy = _mapper.Map<List<AccountLiteModel>>(
+                message.MessageRecipients
+                    .Where(messageRecipient =>
+                        (!currentUserId.HasValue || messageRecipient.AccountId != currentUserId) &&
+                        messageRecipient.AccountId != message.CreatedById &&
+                        messageRecipient.IsRead)
+                    .Select(messageRecipient => messageRecipient.Account))
+        };
+    }
+
+    #endregion
 }
