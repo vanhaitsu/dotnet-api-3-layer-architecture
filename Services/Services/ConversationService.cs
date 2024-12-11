@@ -13,7 +13,6 @@ using Services.Interfaces;
 using Services.Models.ConversationModels;
 using Services.Models.MessageModels;
 using Services.Models.ResponseModels;
-using Services.Utils;
 
 namespace Services.Services;
 
@@ -104,56 +103,28 @@ public class ConversationService : IConversationService
                 Message = "Unauthorized"
             };
 
-        var cacheKey = $"conversation_{id}_account_{currentUserId}";
-        var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
-        {
-            var conversation =
-                await _unitOfWork.ConversationRepository.FindByAccountIdAndConversationIdAsync(currentUserId.Value, id,
-                    conversations => EntityFrameworkQueryableExtensions.ThenInclude(
-                            conversations.Include(conversation => conversation.AccountConversations),
-                            accountConversation => accountConversation.Account)
-                        .Include(conversation => conversation.AccountConversations).ThenInclude(accountConversation =>
-                            accountConversation.MessageRecipients.Where(messageRecipient => !messageRecipient.IsDeleted)
-                                .OrderByDescending(messageRecipient => messageRecipient.Message.CreationDate).Take(6))
-                        .ThenInclude(messageRecipient => messageRecipient.Message));
-            if (conversation == null)
-                return new ResponseModel
-                {
-                    Code = StatusCodes.Status404NotFound,
-                    Message = "Conversation not found"
-                };
-
-            var senderAccountConversations =
-                conversation.AccountConversations.First(accountConversation =>
-                    accountConversation.AccountId == currentUserId);
-            var recipientAccountConversations =
-                conversation.AccountConversations.First(accountConversation =>
-                    accountConversation.AccountId != currentUserId);
-            var latestMessage = senderAccountConversations.MessageRecipients
-                .Select(messageRecipient => messageRecipient.Message).FirstOrDefault();
-            var conversationModel = new ConversationModel
-            {
-                Id = conversation.Id,
-                CreationDate = conversation.CreationDate,
-                IsDeleted = conversation.IsDeleted,
-                Name = recipientAccountConversations.Account.FirstName,
-                Image = recipientAccountConversations.Account.Image,
-                IsRestricted = conversation.IsRestricted,
-                NumberOfUnreadMessages = senderAccountConversations.MessageRecipients.Count(messageRecipient =>
-                    !messageRecipient.IsRead && !messageRecipient.IsDeleted),
-                IsArchived = senderAccountConversations.IsArchived,
-                IsOwner = senderAccountConversations.IsOwner,
-                LatestMessage = latestMessage == null ? null : _mapper.Map<MessageModel>(latestMessage)
-            };
-
+        var conversation = await _unitOfWork.ConversationRepository.FindByAccountIdAndConversationIdAsync(
+            currentUserId.Value, id, conversations => EntityFrameworkQueryableExtensions
+                .ThenInclude(conversations.Include(conversation => conversation.AccountConversations),
+                    accountConversation => accountConversation.Account)
+                .Include(conversation => conversation.AccountConversations).ThenInclude(accountConversation =>
+                    accountConversation.MessageRecipients.Where(messageRecipient => !messageRecipient.IsDeleted)
+                        .OrderByDescending(messageRecipient => messageRecipient.Message.CreationDate).Take(6))
+                .ThenInclude(messageRecipient => messageRecipient.Message));
+        if (conversation == null)
             return new ResponseModel
             {
-                Message = "Get conversation successfully",
-                Data = conversationModel
+                Code = StatusCodes.Status404NotFound,
+                Message = "Conversation not found"
             };
-        });
 
-        return responseModel;
+        var conversationModel = MapFromConversationToConversationModel(conversation, currentUserId.Value);
+
+        return new ResponseModel
+        {
+            Message = "Get conversation successfully",
+            Data = conversationModel
+        };
     }
 
     public async Task<ResponseModel> GetAll(ConversationFilterModel conversationFilterModel)
@@ -166,82 +137,53 @@ public class ConversationService : IConversationService
                 Message = "Unauthorized"
             };
 
-        var cacheKey = $"conversations_account_{currentUserId}_{CacheTools.GenerateCacheKey(conversationFilterModel)}";
-        var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
+        var conversations = await _unitOfWork.ConversationRepository.GetAllAsync(
+            conversation =>
+                Enumerable.Any(conversation.AccountConversations, accountConversation =>
+                    accountConversation.AccountId == currentUserId &&
+                    (conversationFilterModel.IsArchived == null ||
+                     accountConversation.IsArchived == conversationFilterModel.IsArchived) &&
+                    !accountConversation.IsDeleted &&
+                    accountConversation.MessageRecipients.Any(messageRecipient => !messageRecipient.IsDeleted)) &&
+                (string.IsNullOrWhiteSpace(conversationFilterModel.Search) ||
+                 Enumerable.Any(conversation.AccountConversations, accountConversation =>
+                     accountConversation.Account.FirstName.ToLower()
+                         .Contains(conversationFilterModel.Search.ToLower())) ||
+                 Enumerable.Any(conversation.AccountConversations, accountConversation =>
+                     accountConversation.Account.LastName.ToLower()
+                         .Contains(conversationFilterModel.Search.ToLower())) ||
+                 Enumerable.Any(conversation.AccountConversations, accountConversation =>
+                     accountConversation.Account.Username.ToLower()
+                         .Contains(conversationFilterModel.Search.ToLower())) ||
+                 Enumerable.Any(conversation.AccountConversations, accountConversation =>
+                     accountConversation.Account.Email.ToLower()
+                         .Contains(conversationFilterModel.Search.ToLower()))),
+            conversations => conversations.OrderByDescending(conversation =>
+                conversation.AccountConversations
+                    .First(accountConversation => accountConversation.AccountId == currentUserId).MessageRecipients
+                    .Max(messageRecipient => messageRecipient.Message.CreationDate)),
+            conversations => EntityFrameworkQueryableExtensions.ThenInclude(
+                    conversations.Include(conversation => conversation.AccountConversations),
+                    accountConversation => accountConversation.Account)
+                .Include(conversation => conversation.AccountConversations).ThenInclude(accountConversation =>
+                    accountConversation.MessageRecipients.Where(messageRecipient => !messageRecipient.IsDeleted)
+                        .OrderByDescending(messageRecipient => messageRecipient.Message.CreationDate).Take(6))
+                .ThenInclude(messageRecipient => messageRecipient.Message),
+            conversationFilterModel.PageIndex,
+            conversationFilterModel.PageSize
+        );
+        var conversationModels = new List<ConversationModel>();
+        foreach (var conversation in conversations.Data)
+            conversationModels.Add(MapFromConversationToConversationModel(conversation, currentUserId.Value));
+
+        var result = new Pagination<ConversationModel>(conversationModels, conversationFilterModel.PageIndex,
+            conversationFilterModel.PageSize, conversations.TotalCount);
+
+        return new ResponseModel
         {
-            var conversations = await _unitOfWork.ConversationRepository.GetAllAsync(
-                conversation =>
-                    Enumerable.Any(conversation.AccountConversations, accountConversation =>
-                        accountConversation.AccountId == currentUserId &&
-                        (conversationFilterModel.IsArchived == null ||
-                         accountConversation.IsArchived == conversationFilterModel.IsArchived) &&
-                        !accountConversation.IsDeleted &&
-                        accountConversation.MessageRecipients.Any(messageRecipient => !messageRecipient.IsDeleted)) &&
-                    (string.IsNullOrWhiteSpace(conversationFilterModel.Search) ||
-                     Enumerable.Any(conversation.AccountConversations, accountConversation =>
-                         accountConversation.Account.FirstName.ToLower()
-                             .Contains(conversationFilterModel.Search.ToLower())) ||
-                     Enumerable.Any(conversation.AccountConversations, accountConversation =>
-                         accountConversation.Account.LastName.ToLower()
-                             .Contains(conversationFilterModel.Search.ToLower())) ||
-                     Enumerable.Any(conversation.AccountConversations, accountConversation =>
-                         accountConversation.Account.Username.ToLower()
-                             .Contains(conversationFilterModel.Search.ToLower())) ||
-                     Enumerable.Any(conversation.AccountConversations, accountConversation =>
-                         accountConversation.Account.Email.ToLower()
-                             .Contains(conversationFilterModel.Search.ToLower()))),
-                conversations => conversations.OrderByDescending(conversation =>
-                    conversation.AccountConversations
-                        .First(accountConversation => accountConversation.AccountId == currentUserId).MessageRecipients
-                        .Max(messageRecipient => messageRecipient.Message.CreationDate)),
-                conversations => EntityFrameworkQueryableExtensions.ThenInclude(
-                        conversations.Include(conversation => conversation.AccountConversations),
-                        accountConversation => accountConversation.Account)
-                    .Include(conversation => conversation.AccountConversations).ThenInclude(accountConversation =>
-                        accountConversation.MessageRecipients.Where(messageRecipient => !messageRecipient.IsDeleted)
-                            .OrderByDescending(messageRecipient => messageRecipient.Message.CreationDate).Take(6))
-                    .ThenInclude(messageRecipient => messageRecipient.Message),
-                conversationFilterModel.PageIndex,
-                conversationFilterModel.PageSize
-            );
-            var conversationModels = new List<ConversationModel>();
-            foreach (var conversation in conversations.Data)
-            {
-                var senderAccountConversations =
-                    conversation.AccountConversations.First(accountConversation =>
-                        accountConversation.AccountId == currentUserId);
-                var recipientAccountConversations =
-                    conversation.AccountConversations.First(accountConversation =>
-                        accountConversation.AccountId != currentUserId);
-                var latestMessage = senderAccountConversations.MessageRecipients
-                    .Select(messageRecipient => messageRecipient.Message).FirstOrDefault();
-                conversationModels.Add(new ConversationModel
-                {
-                    Id = conversation.Id,
-                    CreationDate = conversation.CreationDate,
-                    IsDeleted = conversation.IsDeleted,
-                    Name = recipientAccountConversations.Account.FirstName,
-                    Image = recipientAccountConversations.Account.Image,
-                    IsRestricted = conversation.IsRestricted,
-                    NumberOfUnreadMessages = senderAccountConversations!.MessageRecipients.Count(messageRecipient =>
-                        !messageRecipient.IsRead && !messageRecipient.IsDeleted),
-                    IsArchived = senderAccountConversations.IsArchived,
-                    IsOwner = senderAccountConversations.IsOwner,
-                    LatestMessage = latestMessage == null ? null : _mapper.Map<MessageModel>(latestMessage)
-                });
-            }
-
-            var result = new Pagination<ConversationModel>(conversationModels, conversationFilterModel.PageIndex,
-                conversationFilterModel.PageSize, conversations.TotalCount);
-
-            return new ResponseModel
-            {
-                Message = "Get all conversations successfully",
-                Data = result
-            };
-        });
-
-        return responseModel;
+            Message = "Get all conversations successfully",
+            Data = result
+        };
     }
 
     public async Task<ResponseModel> Archive(Guid id)
@@ -326,10 +268,13 @@ public class ConversationService : IConversationService
 
         var existedConversation =
             await _unitOfWork.ConversationRepository.FindByAccountIdAndConversationIdAsync(currentUserId.Value,
-                conversationId,
-                conversations => EntityFrameworkQueryableExtensions.ThenInclude(
-                    conversations.Include(conversation => conversation.AccountConversations),
-                    accountConversation => accountConversation.Account));
+                conversationId, conversations => EntityFrameworkQueryableExtensions
+                    .ThenInclude(conversations.Include(conversation => conversation.AccountConversations),
+                        accountConversation => accountConversation.Account)
+                    .Include(conversation => conversation.AccountConversations).ThenInclude(accountConversation =>
+                        accountConversation.MessageRecipients.Where(messageRecipient => !messageRecipient.IsDeleted)
+                            .OrderByDescending(messageRecipient => messageRecipient.Message.CreationDate).Take(6))
+                    .ThenInclude(messageRecipient => messageRecipient.Message));
         if (existedConversation == null)
             return new ResponseModel
             {
@@ -359,9 +304,16 @@ public class ConversationService : IConversationService
         await _unitOfWork.MessageRepository.AddAsync(message);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
+            var recipientIds = message.MessageRecipients.Select(messageRecipient => messageRecipient.AccountId)
+                .ToList();
+            foreach (var recipientId in recipientIds)
+                await _hubContext.Clients
+                    .Clients(_connections.GetConnections(recipientIds))
+                    .SendAsync("ReceiveConversation",
+                        MapFromConversationToConversationModel(existedConversation, recipientId));
+
             await _hubContext.Clients
-                .Clients(_connections.GetConnections(message.MessageRecipients
-                    .Select(messageRecipient => messageRecipient.AccountId).ToList())).SendAsync("ReceiveMessage",
+                .Clients(_connections.GetConnections(recipientIds)).SendAsync("ReceiveMessage",
                     MapFromMessageToMessageModel(message, currentUserId));
 
             return new ResponseModel
@@ -388,69 +340,83 @@ public class ConversationService : IConversationService
                 Message = "Unauthorized"
             };
 
-        var cacheKey =
-            $"messages_conversation_{conversationId}_account_{currentUserId}_{CacheTools.GenerateCacheKey(messageFilterModel)}";
-        var responseModel = await _redisHelper.GetOrSetAsync(cacheKey, async () =>
+        var messages = await _unitOfWork.MessageRepository.GetAllAsync(
+            message => Enumerable.Any(message.MessageRecipients, messageRecipient =>
+                messageRecipient.AccountId == currentUserId &&
+                messageRecipient.AccountConversation.ConversationId == conversationId &&
+                !messageRecipient.IsDeleted),
+            messages => messages.OrderByDescending(message => message.CreationDate),
+            messages => EntityFrameworkQueryableExtensions.Include(messages.Include(message => message.CreatedBy),
+                    message => message.MessageRecipients)
+                .ThenInclude(messageRecipient => messageRecipient.Account),
+            messageFilterModel.PageIndex,
+            messageFilterModel.PageSize
+        );
+        var messageModels = new List<MessageModel>();
+        var unreadMessages = new List<MessageRecipient>();
+        foreach (var message in messages.Data)
         {
-            var messages = await _unitOfWork.MessageRepository.GetAllAsync(
-                message => Enumerable.Any(message.MessageRecipients, messageRecipient =>
-                    messageRecipient.AccountId == currentUserId &&
-                    messageRecipient.AccountConversation.ConversationId == conversationId &&
-                    !messageRecipient.IsDeleted),
-                messages => messages.OrderByDescending(message => message.CreationDate),
-                messages => EntityFrameworkQueryableExtensions.Include(messages.Include(message => message.CreatedBy),
-                        message => message.MessageRecipients)
-                    .ThenInclude(messageRecipient => messageRecipient.Account),
-                messageFilterModel.PageIndex,
-                messageFilterModel.PageSize
-            );
-            var messageModels = new List<MessageModel>();
-            var unreadMessages = new List<MessageRecipient>();
-            foreach (var message in messages.Data)
+            var currentUserMessageRecipient =
+                message.MessageRecipients.First(messageRecipient => messageRecipient.AccountId == currentUserId);
+            if (!currentUserMessageRecipient.IsRead)
             {
-                var currentUserMessageRecipient =
-                    message.MessageRecipients.First(messageRecipient => messageRecipient.AccountId == currentUserId);
-                if (!currentUserMessageRecipient.IsRead)
+                currentUserMessageRecipient.IsRead = true;
+                unreadMessages.Add(currentUserMessageRecipient);
+            }
+
+            messageModels.Add(MapFromMessageToMessageModel(message, currentUserId));
+        }
+
+        if (unreadMessages.Any())
+        {
+            _unitOfWork.MessageRecipientRepository.UpdateRange(unreadMessages);
+            if (await _unitOfWork.SaveChangeAsync() != unreadMessages.Count)
+                return new ResponseModel
                 {
-                    currentUserMessageRecipient.IsRead = true;
-                    unreadMessages.Add(currentUserMessageRecipient);
-                }
+                    Code = StatusCodes.Status500InternalServerError,
+                    Message = "Cannot get all messages"
+                };
+        }
 
-                messageModels.Add(MapFromMessageToMessageModel(message, currentUserId));
-            }
+        var result = new Pagination<MessageModel>(messageModels, messageFilterModel.PageIndex,
+            messageFilterModel.PageSize, messages.TotalCount);
 
-            if (unreadMessages.Any())
-            {
-                _unitOfWork.MessageRecipientRepository.UpdateRange(unreadMessages);
-                if (await _unitOfWork.SaveChangeAsync() != unreadMessages.Count)
-                    return new ResponseModel
-                    {
-                        Code = StatusCodes.Status500InternalServerError,
-                        Message = "Cannot get all messages"
-                    };
-            }
-
-            var result = new Pagination<MessageModel>(messageModels, messageFilterModel.PageIndex,
-                messageFilterModel.PageSize, messages.TotalCount);
-
-            return new ResponseModel
-            {
-                Message = "Get all messages successfully",
-                Data = result
-            };
-        });
-
-        return responseModel;
+        return new ResponseModel
+        {
+            Message = "Get all messages successfully",
+            Data = result
+        };
     }
 
     #region Helper
 
-    /// <summary>
-    ///     Custom mapping from Message to MessageModel
-    /// </summary>
-    /// <param name="message">Must include MessageRecipient then include Account</param>
-    /// <param name="currentUserId">This id will not be contained in the IsReadBy list</param>
-    /// <returns></returns>
+    private ConversationModel MapFromConversationToConversationModel(Conversation conversation, Guid accountId)
+    {
+        var senderAccountConversations =
+            conversation.AccountConversations.First(accountConversation =>
+                accountConversation.AccountId == accountId);
+        var recipientAccountConversations =
+            conversation.AccountConversations.First(accountConversation =>
+                accountConversation.AccountId != accountId);
+        var latestMessage = senderAccountConversations.MessageRecipients
+            .Select(messageRecipient => messageRecipient.Message).FirstOrDefault();
+
+        return new ConversationModel
+        {
+            Id = conversation.Id,
+            CreationDate = conversation.CreationDate,
+            IsDeleted = conversation.IsDeleted,
+            Name = recipientAccountConversations.Account.FirstName,
+            Image = recipientAccountConversations.Account.Image,
+            IsRestricted = conversation.IsRestricted,
+            NumberOfUnreadMessages = senderAccountConversations.MessageRecipients.Count(messageRecipient =>
+                !messageRecipient.IsRead && !messageRecipient.IsDeleted),
+            IsArchived = senderAccountConversations.IsArchived,
+            IsOwner = senderAccountConversations.IsOwner,
+            LatestMessage = latestMessage == null ? null : _mapper.Map<MessageModel>(latestMessage)
+        };
+    }
+
     private MessageModel MapFromMessageToMessageModel(Message message, Guid? currentUserId = null)
     {
         return new MessageModel
