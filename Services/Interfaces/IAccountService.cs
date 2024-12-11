@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.JsonPatch;
-using Repositories.Entities;
-using Services.Models.AccountModels;
+﻿using Services.Models.AccountModels;
 using Services.Models.ResponseModels;
 
 namespace Services.Interfaces;
@@ -19,8 +17,7 @@ public interface IAccountService
     Task<ResponseModel> AddRange(List<AccountSignUpModel> accountSignUpModels);
     Task<ResponseModel> Get(string idOrUsername);
     Task<ResponseModel> GetAll(AccountFilterModel accountFilterModel);
-    Task<ResponseModel> UpdatePut(Guid id, AccountUpdateModel accountUpdateModel);
-    Task<ResponseModel> UpdatePatch(Guid id, JsonPatchDocument<Account> patchDoc);
+    Task<ResponseModel> Update(Guid id, AccountUpdateModel accountUpdateModel);
     Task<ResponseModel> Delete(Guid id);
     Task<ResponseModel> Restore(Guid id);
 }

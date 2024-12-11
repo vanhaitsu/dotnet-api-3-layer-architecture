@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Http;
 
 namespace Services.Models.ResponseModels;
 

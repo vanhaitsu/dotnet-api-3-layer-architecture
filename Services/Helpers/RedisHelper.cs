@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
 using Repositories.Common;
 using Services.Interfaces;
 using StackExchange.Redis;
@@ -37,8 +38,10 @@ public class RedisHelper : IRedisHelper
                 AbsoluteExpirationRelativeToNow = absoluteExpiration,
                 SlidingExpiration = slidingExpiration
             };
-            var serializedData = JsonConvert.SerializeObject(data,
-                new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            var serializedData = JsonSerializer.Serialize(data, new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            });
             await _distributedCache.SetStringAsync(cacheKey, serializedData, cacheOptions);
         }
     }
@@ -54,7 +57,7 @@ public class RedisHelper : IRedisHelper
             if (!string.IsNullOrWhiteSpace(cachedData))
                 // If data exists, deserialize and return it
                 // TODO: cachedData is deserialized to ResponseModel but its Data field is still a JSON object
-                return JsonConvert.DeserializeObject<T>(cachedData)!;
+                return JsonSerializer.Deserialize<T>(cachedData)!;
         }
 
         // Data not in cache; retrieve data from the provided function

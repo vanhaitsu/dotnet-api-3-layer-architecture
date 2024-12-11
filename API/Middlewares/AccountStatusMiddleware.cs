@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json;
 using Repositories.Interfaces;
 using Services.Models.ResponseModels;
 
@@ -33,7 +33,7 @@ public class AccountStatusMiddleware : IMiddleware
                         IsDeleted = true
                     }
                 };
-                var jsonResponse = JsonConvert.SerializeObject(response);
+                var jsonResponse = JsonSerializer.Serialize(response);
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(jsonResponse);

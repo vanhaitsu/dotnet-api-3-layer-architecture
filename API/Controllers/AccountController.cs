@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
-using Repositories.Entities;
 using Services.Interfaces;
 using Services.Models.AccountModels;
 using Services.Models.ResponseModels;
@@ -75,29 +73,11 @@ public class AccountController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdatePut(Guid id, [FromBody] AccountUpdateModel accountUpdateModel)
+    public async Task<IActionResult> Update(Guid id, [FromBody] AccountUpdateModel accountUpdateModel)
     {
         try
         {
-            var result = await _accountService.UpdatePut(id, accountUpdateModel);
-            return StatusCode(result.Code, result);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
-            {
-                Code = StatusCodes.Status500InternalServerError,
-                Message = ex.Message
-            });
-        }
-    }
-
-    [HttpPatch("{id}")]
-    public async Task<IActionResult> UpdatePatch(Guid id, [FromBody] JsonPatchDocument<Account> patchDoc)
-    {
-        try
-        {
-            var result = await _accountService.UpdatePatch(id, patchDoc);
+            var result = await _accountService.Update(id, accountUpdateModel);
             return StatusCode(result.Code, result);
         }
         catch (Exception ex)

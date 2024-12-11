@@ -1,16 +1,18 @@
+using System.Text.Json.Serialization;
 using API;
 using API.Middlewares;
 using Microsoft.OpenApi.Models;
-using Newtonsoft.Json;
 using Repositories.Common;
 using Services.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers()
-    // Enable JsonPatchDocument for PATCH endpoint and ignore all null values in response
-    .AddNewtonsoftJson(options => { options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore; });
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    // Ignore all fields with null value in response
+    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+});
 builder.Services.AddSignalR(options => { options.MaximumReceiveMessageSize = null; });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

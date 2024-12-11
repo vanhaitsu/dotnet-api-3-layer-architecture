@@ -2,7 +2,6 @@
 using System.Security.Claims;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Repositories.Common;
@@ -535,7 +534,7 @@ public class AccountService : IAccountService
         return responseModel;
     }
 
-    public async Task<ResponseModel> UpdatePut(Guid id, AccountUpdateModel accountUpdateModel)
+    public async Task<ResponseModel> Update(Guid id, AccountUpdateModel accountUpdateModel)
     {
         var account = await _unitOfWork.AccountRepository.GetAsync(id);
         if (account == null)
@@ -557,37 +556,6 @@ public class AccountService : IAccountService
         }
 
         _mapper.Map(accountUpdateModel, account);
-        _unitOfWork.AccountRepository.Update(account);
-        if (await _unitOfWork.SaveChangeAsync() > 0)
-        {
-            await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Id}");
-            await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Username}");
-            await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
-
-            return new ResponseModel
-            {
-                Message = "Update account successfully"
-            };
-        }
-
-        return new ResponseModel
-        {
-            Code = StatusCodes.Status500InternalServerError,
-            Message = "Cannot update account"
-        };
-    }
-
-    public async Task<ResponseModel> UpdatePatch(Guid id, JsonPatchDocument<Account> patchDoc)
-    {
-        var account = await _unitOfWork.AccountRepository.GetAsync(id);
-        if (account == null)
-            return new ResponseModel
-            {
-                Code = StatusCodes.Status404NotFound,
-                Message = "Account not found"
-            };
-
-        patchDoc.ApplyTo(account);
         _unitOfWork.AccountRepository.Update(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
