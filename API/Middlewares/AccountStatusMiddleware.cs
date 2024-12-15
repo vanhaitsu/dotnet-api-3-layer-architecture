@@ -26,7 +26,7 @@ public class AccountStatusMiddleware : IMiddleware
             {
                 var response = new ResponseModel
                 {
-                    Code = StatusCodes.Status403Forbidden,
+                    Code = StatusCodes.Status401Unauthorized,
                     Message = "Your account has been deleted",
                     Data = new
                     {
@@ -34,7 +34,7 @@ public class AccountStatusMiddleware : IMiddleware
                     }
                 };
                 var jsonResponse = JsonSerializer.Serialize(response);
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(jsonResponse);
 

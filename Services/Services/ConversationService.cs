@@ -52,8 +52,8 @@ public class ConversationService : IConversationService
         if (existedConversation != null)
             return new ResponseModel
             {
-                Code = StatusCodes.Status409Conflict,
-                Message = "Conversation already exists"
+                Message = "Conversation already exists",
+                Data = existedConversation.Id
             };
 
         var recipientAccount = await _unitOfWork.AccountRepository.GetAsync(conversationAddModel.RecipientId);
@@ -83,7 +83,8 @@ public class ConversationService : IConversationService
             return new ResponseModel
             {
                 Code = StatusCodes.Status201Created,
-                Message = "Create conversation successfully"
+                Message = "Create conversation successfully",
+                Data = conversation.Id
             };
 
         return new ResponseModel
@@ -385,6 +386,33 @@ public class ConversationService : IConversationService
         {
             Message = "Get all messages successfully",
             Data = result
+        };
+    }
+
+    public async Task<ResponseModel> ReadMessages(Guid conversationId)
+    {
+        var currentUserId = _claimService.GetCurrentUserId;
+        if (!currentUserId.HasValue)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status401Unauthorized,
+                Message = "Unauthorized"
+            };
+        
+        await _unitOfWork.MessageRecipientRepository.UpdateIsReadAllByAccountIdAndConversationIdAsync(currentUserId.Value, conversationId);
+        if (await _unitOfWork.SaveChangeAsync() > 0)
+        {
+            // TODO: Push real time message to update isReadBy...
+            return new ResponseModel
+            {
+                Message = "Read messages successfully"
+            };
+        }
+
+        return new ResponseModel
+        {
+            Code = StatusCodes.Status500InternalServerError,
+            Message = "Cannot read messages"
         };
     }
 

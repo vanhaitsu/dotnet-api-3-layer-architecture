@@ -6,4 +6,5 @@ public interface IMessageRecipientRepository : IGenericRepository<MessageRecipie
 {
     Task SoftRemoveAllByAccountIdAndAccountConversationIdAsync(Guid accountId, Guid accountConversationId);
     Task<MessageRecipient?> FindByAccountIdAndMessageIdAsync(Guid accountId, Guid messageId);
+    Task UpdateIsReadAllByAccountIdAndConversationIdAsync(Guid accountId, Guid conversationId);
 }

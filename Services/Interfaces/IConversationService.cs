@@ -13,4 +13,5 @@ public interface IConversationService
     Task<ResponseModel> Delete(Guid id);
     Task<ResponseModel> AddMessage(Guid conversationId, MessageAddModel messageAddModel);
     Task<ResponseModel> GetAllMessages(Guid conversationId, MessageFilterModel messageFilterModel);
+    Task<ResponseModel> ReadMessages(Guid conversationId);
 }

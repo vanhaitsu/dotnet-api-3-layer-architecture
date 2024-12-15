@@ -24,4 +24,19 @@ public class MessageRecipientRepository : GenericRepository<MessageRecipient>, I
         return await _dbSet.FirstOrDefaultAsync(messageRecipient =>
             messageRecipient.AccountId == accountId && messageRecipient.MessageId == messageId);
     }
+
+    public async Task UpdateIsReadAllByAccountIdAndConversationIdAsync(Guid accountId, Guid conversationId)
+    {
+        var messageRecipients = await _dbSet.Where(messageRecipient =>
+                messageRecipient.AccountId == accountId &&
+                messageRecipient.AccountConversation.ConversationId == conversationId && !messageRecipient.IsRead &&
+                !messageRecipient.IsDeleted)
+            .ToListAsync();
+        foreach (var messageRecipient in messageRecipients)
+        {
+            messageRecipient.IsRead = true;
+        }
+        
+        UpdateRange(messageRecipients);
+    }
 }

@@ -130,7 +130,7 @@ public class AccountService : IAccountService
 
         return new ResponseModel
         {
-            Code = StatusCodes.Status401Unauthorized,
+            Code = StatusCodes.Status404NotFound,
             Message = "Invalid email or password"
         };
     }
@@ -161,7 +161,7 @@ public class AccountService : IAccountService
         if (principal == null)
             return new ResponseModel
             {
-                Code = StatusCodes.Status401Unauthorized,
+                Code = StatusCodes.Status400BadRequest,
                 Message = "Invalid access token"
             };
 
@@ -170,17 +170,18 @@ public class AccountService : IAccountService
             !Guid.TryParse(accountIdFromPrincipal, out var accountId))
             return new ResponseModel
             {
-                Code = StatusCodes.Status401Unauthorized,
+                Code = StatusCodes.Status400BadRequest,
                 Message = "Invalid account"
             };
 
         // Validate refresh token
         var account = await _unitOfWork.AccountRepository.GetAsync(accountId);
         if (account == null || account.IsDeleted || refreshToken.AccountId != account.Id ||
-            refreshToken.Token != accountRefreshTokenModel.RefreshToken)
+            refreshToken.Token != accountRefreshTokenModel.RefreshToken ||
+            AuthenticationTools.IsUniqueTokenExpired(accountRefreshTokenModel.RefreshToken))
             return new ResponseModel
             {
-                Code = StatusCodes.Status401Unauthorized,
+                Code = StatusCodes.Status400BadRequest,
                 Message = "Invalid refresh token"
             };
 

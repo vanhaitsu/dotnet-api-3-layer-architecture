@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Repositories.Enums;
+using Services.Models.AccountModels.Validations;
 
 namespace Services.Models.AccountModels;
 
@@ -27,7 +28,7 @@ public class AccountSignUpModel
     [EnumDataType(typeof(Gender))]
     public Gender Gender { get; set; }
 
-    [Required] public DateOnly DateOfBirth { get; set; }
+    [Required] [DateOfBirthValidation] public DateOnly DateOfBirth { get; set; }
     [Required] [Phone] [StringLength(15)] public string PhoneNumber { get; set; } = null!;
     public string? Address { get; set; }
     [EnumDataType(typeof(Role))] public Role? Role { get; set; }
