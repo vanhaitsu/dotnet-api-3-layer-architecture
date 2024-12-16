@@ -18,6 +18,7 @@ using Services.Models.AccountModels.OAuth2;
 using Services.Models.ResponseModels;
 using Services.Models.TokenModels;
 using Services.Utils;
+using Account = Repositories.Entities.Account;
 using Role = Repositories.Enums.Role;
 
 namespace Services.Services;
@@ -25,16 +26,18 @@ namespace Services.Services;
 public class AccountService : IAccountService
 {
     private readonly IClaimService _claimService;
+    private readonly ICloudinaryHelper _cloudinaryHelper;
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
     private readonly IMapper _mapper;
     private readonly IRedisHelper _redisHelper;
     private readonly IUnitOfWork _unitOfWork;
 
-    public AccountService(IClaimService claimService, IConfiguration configuration, IEmailService emailService,
-        IMapper mapper, IRedisHelper redisHelper, IUnitOfWork unitOfWork)
+    public AccountService(IClaimService claimService, ICloudinaryHelper cloudinaryHelper, IConfiguration configuration,
+        IEmailService emailService, IMapper mapper, IRedisHelper redisHelper, IUnitOfWork unitOfWork)
     {
         _claimService = claimService;
+        _cloudinaryHelper = cloudinaryHelper;
         _configuration = configuration;
         _emailService = emailService;
         _mapper = mapper;
@@ -689,6 +692,10 @@ public class AccountService : IAccountService
         }
 
         _mapper.Map(accountUpdateModel, account);
+        if (accountUpdateModel.Image != null)
+            account.Image = await _cloudinaryHelper.UploadImageAsync(accountUpdateModel.Image, account.Id.ToString(),
+                account.Id.ToString());
+
         _unitOfWork.AccountRepository.Update(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {

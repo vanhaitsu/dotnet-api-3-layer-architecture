@@ -2,6 +2,7 @@
 using System.Text;
 using API.Middlewares;
 using API.Utils;
+using CloudinaryDotNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -36,6 +37,16 @@ public static class Configuration
         services.AddStackExchangeRedisCache(options => { options.Configuration = redisConfiguration; });
         services.AddSingleton<IConnectionMultiplexer>(
             ConnectionMultiplexer.Connect(redisConfiguration));
+
+        // Cloudinary
+        var cloud = configuration["Cloudinary:Cloud"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(cloud);
+        var apiKey = configuration["Cloudinary:ApiKey"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(apiKey);
+        var apiSecret = configuration["Cloudinary:ApiSecret"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(apiKey);
+        var cloudinary = new Cloudinary(new Account { Cloud = cloud, ApiKey = apiKey, ApiSecret = apiSecret });
+        services.AddSingleton<ICloudinary>(cloudinary);
 
         // JWT
         var secret = configuration["JWT:Secret"];
@@ -110,6 +121,7 @@ public static class Configuration
         services.AddAutoMapper(typeof(MapperProfile).Assembly);
         services.AddScoped<IClaimService, ClaimService>();
         services.AddScoped<IRedisHelper, RedisHelper>();
+        services.AddScoped<ICloudinaryHelper, CloudinaryHelper>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddTransient<IEmailService, EmailService>();
 

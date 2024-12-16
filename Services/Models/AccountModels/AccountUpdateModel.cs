@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 using Repositories.Enums;
 using Services.Models.AccountModels.Validations;
 
@@ -17,5 +18,5 @@ public class AccountUpdateModel
     [Required] [DateOfBirthValidation] public DateOnly? DateOfBirth { get; set; }
     [Required] [Phone] [StringLength(15)] public string? PhoneNumber { get; set; }
     public string? Address { get; set; }
-    public string? Image { get; set; }
+    public IFormFile? Image { get; set; }
 }

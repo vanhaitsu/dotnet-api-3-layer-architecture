@@ -73,7 +73,7 @@ public class AccountController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] AccountUpdateModel accountUpdateModel)
+    public async Task<IActionResult> Update(Guid id, [FromForm] AccountUpdateModel accountUpdateModel)
     {
         try
         {
