@@ -53,7 +53,7 @@ public class ConnectionMapping<T> where T : notnull
             lock (connections)
             {
                 connections.Remove(connectionId);
-                if (connections.Count == 0) Connections.Remove(key);
+                if (!connections.Any()) Connections.Remove(key);
             }
         }
     }

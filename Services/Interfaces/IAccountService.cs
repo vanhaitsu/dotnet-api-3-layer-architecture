@@ -15,10 +15,11 @@ public interface IAccountService
     Task<ResponseModel> ChangePassword(AccountChangePasswordModel accountChangePasswordModel);
     Task<ResponseModel> ForgotPassword(AccountEmailModel accountEmailModel);
     Task<ResponseModel> ResetPassword(AccountResetPasswordModel accountResetPasswordModel);
-    Task<ResponseModel> AddRange(List<AccountSignUpModel> accountSignUpModels);
+    Task<ResponseModel> AddRange(AccountAddRangeModel accountAddRangeModel);
     Task<ResponseModel> Get(string idOrUsername);
     Task<ResponseModel> GetAll(AccountFilterModel accountFilterModel);
     Task<ResponseModel> Update(Guid id, AccountUpdateModel accountUpdateModel);
+    Task<ResponseModel> UpdateRoles(Guid id, AccountUpdateRolesModel accountUpdateRolesModel);
     Task<ResponseModel> Delete(Guid id);
     Task<ResponseModel> Restore(Guid id);
 }

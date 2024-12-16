@@ -523,10 +523,12 @@ public class AccountService : IAccountService
         };
     }
 
-    public async Task<ResponseModel> AddRange(List<AccountSignUpModel> accountSignUpModels)
+    public async Task<ResponseModel> AddRange(AccountAddRangeModel accountAddRangeModel)
     {
         var accounts = new List<Account>();
-        foreach (var accountSignUpModel in accountSignUpModels)
+        var roles = await _unitOfWork.RoleRepository.GetAllAsync();
+        var userRole = await _unitOfWork.RoleRepository.FindByNameAsync(Role.User.ToString());
+        foreach (var accountSignUpModel in accountAddRangeModel.Accounts)
         {
             if (!string.IsNullOrWhiteSpace(accountSignUpModel.Username))
             {
@@ -542,9 +544,14 @@ public class AccountService : IAccountService
 
             var account = _mapper.Map<Account>(accountSignUpModel);
             account.HashedPassword = AuthenticationTools.HashPassword(accountSignUpModel.Password);
-            var role = await _unitOfWork.RoleRepository.FindByNameAsync(accountSignUpModel.Role.ToString() ??
-                                                                        Role.User.ToString());
-            account.AccountRoles.Add(new AccountRole { AccountId = account.Id, RoleId = role!.Id });
+            var rolesOfAccount = roles.Data.Where(role =>
+                accountSignUpModel.Roles.Select(r => r.ToString()).Distinct().Contains(role.Name)).ToList();
+            if (rolesOfAccount.Any())
+                foreach (var role in rolesOfAccount)
+                    account.AccountRoles.Add(new AccountRole { Account = account, Role = role });
+            else
+                account.AccountRoles.Add(new AccountRole { Account = account, Role = userRole! });
+
             accounts.Add(account);
         }
 
@@ -564,7 +571,7 @@ public class AccountService : IAccountService
         return new ResponseModel
         {
             Code = StatusCodes.Status500InternalServerError,
-            Message = $"Cannot add {accountSignUpModels.Count} accounts"
+            Message = $"Cannot add {accountAddRangeModel.Accounts.Count} accounts"
         };
     }
 
@@ -699,6 +706,76 @@ public class AccountService : IAccountService
         {
             Code = StatusCodes.Status500InternalServerError,
             Message = "Cannot update account"
+        };
+    }
+
+    public async Task<ResponseModel> UpdateRoles(Guid id, AccountUpdateRolesModel accountUpdateRolesModel)
+    {
+        var account = await _unitOfWork.AccountRepository.GetAsync(id);
+        if (account == null)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status404NotFound,
+                Message = "Account not found"
+            };
+
+        var existedAccountRoles =
+            await _unitOfWork.AccountRoleRepository.GetAllAsync(accountRole => accountRole.AccountId == id,
+                include: accountRoles => accountRoles.Include(accountRole => accountRole.Role));
+        var roles = await _unitOfWork.RoleRepository.GetAllAsync();
+        var newRoles = roles.Data.Where(role =>
+            accountUpdateRolesModel.Roles.Select(r => r.ToString()).Distinct().Contains(role.Name)).ToList();
+        if (!newRoles.Any())
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status400BadRequest,
+                Message = "Invalid roles"
+            };
+
+        var rolesToRemove = existedAccountRoles.Data.Select(accountRole => accountRole.Role).Except(newRoles).ToList();
+        var rolesToAdd = newRoles.Except(existedAccountRoles.Data.Select(accountRole => accountRole.Role)).ToList();
+        if (!rolesToRemove.Any() && !rolesToAdd.Any())
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status409Conflict,
+                Message = "Account roles already exists"
+            };
+
+        // Remove roles
+        var accountRolesToRemove = existedAccountRoles.Data
+            .Where(accountRole => rolesToRemove.Contains(accountRole.Role)).ToList();
+        if (rolesToRemove.Any()) _unitOfWork.AccountRoleRepository.HardRemoveRange(accountRolesToRemove);
+
+        // Add roles
+        if (rolesToAdd.Any())
+        {
+            var accountRolesToAdd = new List<AccountRole>();
+            foreach (var role in rolesToAdd)
+                accountRolesToAdd.Add(new AccountRole
+                {
+                    Account = account,
+                    Role = role
+                });
+
+            await _unitOfWork.AccountRoleRepository.AddRangeAsync(accountRolesToAdd);
+        }
+
+        if (await _unitOfWork.SaveChangeAsync() > 0)
+        {
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Id}");
+            await _redisHelper.InvalidateCacheByPatternAsync($"account_{account.Username}");
+            await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
+
+            return new ResponseModel
+            {
+                Message = "Update account roles successfully"
+            };
+        }
+
+        return new ResponseModel
+        {
+            Code = StatusCodes.Status500InternalServerError,
+            Message = "Cannot update account roles"
         };
     }
 

@@ -31,5 +31,5 @@ public class AccountSignUpModel
     [Required] [DateOfBirthValidation] public DateOnly DateOfBirth { get; set; }
     [Required] [Phone] [StringLength(15)] public string PhoneNumber { get; set; } = null!;
     public string? Address { get; set; }
-    [EnumDataType(typeof(Role))] public Role? Role { get; set; }
+    public List<Role> Roles { get; set; } = null!;
 }

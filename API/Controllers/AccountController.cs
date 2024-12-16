@@ -19,11 +19,11 @@ public class AccountController : ControllerBase
 
     [Authorize(Roles = "Admin")]
     [HttpPost("range")]
-    public async Task<IActionResult> AddRange([FromBody] List<AccountSignUpModel> accountSignUpModels)
+    public async Task<IActionResult> AddRange([FromBody] AccountAddRangeModel accountAddRangeModel)
     {
         try
         {
-            var result = await _accountService.AddRange(accountSignUpModels);
+            var result = await _accountService.AddRange(accountAddRangeModel);
             return StatusCode(result.Code, result);
         }
         catch (Exception ex)
@@ -78,6 +78,25 @@ public class AccountController : ControllerBase
         try
         {
             var result = await _accountService.Update(id, accountUpdateModel);
+            return StatusCode(result.Code, result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("{id}/roles")]
+    public async Task<IActionResult> UpdateRoles(Guid id, [FromBody] AccountUpdateRolesModel accountUpdateRolesModel)
+    {
+        try
+        {
+            var result = await _accountService.UpdateRoles(id, accountUpdateRolesModel);
             return StatusCode(result.Code, result);
         }
         catch (Exception ex)

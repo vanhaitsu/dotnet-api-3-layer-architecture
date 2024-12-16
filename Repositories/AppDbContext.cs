@@ -44,6 +44,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Role>(entity =>
         {
             entity.Property(role => role.Name).HasMaxLength(50);
+            entity.HasIndex(role => role.Name).IsUnique();
             entity.Property(role => role.Description).HasMaxLength(256);
         });
     }
