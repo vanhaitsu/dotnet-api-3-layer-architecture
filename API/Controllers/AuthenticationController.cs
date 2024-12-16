@@ -53,6 +53,24 @@ public class AuthenticationController : ControllerBase
         }
     }
 
+    [HttpGet("sign-in/google")]
+    public async Task<IActionResult> SignInGoogle([FromQuery] string code)
+    {
+        try
+        {
+            var result = await _accountService.SignInGoogle(code);
+            return StatusCode(result.Code, result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = ex.Message
+            });
+        }
+    }
+
     [HttpPost("token/refresh")]
     public async Task<IActionResult> RefreshToken([FromBody] AccountRefreshTokenModel accountRefreshTokenModel)
     {

@@ -1,5 +1,8 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Security.Claims;
+using System.Text.Json;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +14,7 @@ using Repositories.Models.AccountModels;
 using Services.Common;
 using Services.Interfaces;
 using Services.Models.AccountModels;
+using Services.Models.AccountModels.OAuth2;
 using Services.Models.ResponseModels;
 using Services.Models.TokenModels;
 using Services.Utils;
@@ -132,6 +136,129 @@ public class AccountService : IAccountService
         {
             Code = StatusCodes.Status404NotFound,
             Message = "Invalid email or password"
+        };
+    }
+
+    /// <summary>
+    ///     To get the code, make an HTTP request to https://accounts.google.com/o/oauth2/v2/auth with these query string
+    ///     parameters:
+    ///     client_id=&amp;redirect_uri=&amp;response_type=code&amp;
+    ///     scope=https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/userinfo.profile&amp;
+    ///     access_type=offline
+    ///     Document: https://developers.google.com/identity/protocols/oauth2/web-server#creatingclient
+    /// </summary>
+    /// <param name="code">The authorization code that is returned to the web server appears on the query string</param>
+    /// <returns></returns>
+    public async Task<ResponseModel> SignInGoogle(string code)
+    {
+        var clientId = _configuration["OAuth2:Google:ClientId"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(clientId);
+        var clientSecret = _configuration["OAuth2:Google:ClientSecret"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(clientSecret);
+        var serverUrl = _configuration["URL:Server"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(serverUrl);
+
+        // Exchange authorization code for refresh and access tokens
+        // Document: https://developers.google.com/identity/protocols/oauth2/web-server#exchange-authorization-code
+        var googleTokenClient = new HttpClient();
+        var googleTokenResponse = await googleTokenClient.PostAsJsonAsync(
+            "https://oauth2.googleapis.com/token", new
+            {
+                client_id = clientId,
+                client_secret = clientSecret,
+                code,
+                grant_type = "authorization_code",
+                redirect_uri = $"{serverUrl}/api/v1/authentication/sign-in/google"
+            });
+        if (!googleTokenResponse.IsSuccessStatusCode)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = "Error when trying to connect to Google API"
+            };
+
+        // Get user information with Google access token
+        var googleTokenModel =
+            JsonSerializer.Deserialize<GoogleTokenModel>(await googleTokenResponse.Content.ReadAsStringAsync());
+        var googleUserInformationClient = new HttpClient();
+        googleUserInformationClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", googleTokenModel!.AccessToken);
+        var googleUserInformationResponse =
+            await googleUserInformationClient.GetAsync("https://www.googleapis.com/oauth2/v3/userinfo");
+        if (!googleUserInformationResponse.IsSuccessStatusCode)
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = "Error when trying to connect to Google API"
+            };
+
+        // Handle business
+        var googleUserInformationModel =
+            JsonSerializer.Deserialize<GoogleUserInformationModel>(await googleUserInformationResponse.Content
+                .ReadAsStringAsync());
+        Console.WriteLine(await googleUserInformationResponse.Content
+            .ReadAsStringAsync());
+        var account = await _unitOfWork.AccountRepository.FindByEmailAsync(googleUserInformationModel!.Email);
+        if (account != null)
+        {
+            var tokenModel = await GenerateJwtToken(account);
+            if (tokenModel != null)
+                return new ResponseModel
+                {
+                    Message = "Sign in successfully",
+                    Data = tokenModel
+                };
+
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = "Cannot sign in"
+            };
+        }
+
+        account = new Account
+        {
+            FirstName = googleUserInformationModel.FirstName,
+            LastName = googleUserInformationModel.LastName,
+            Username = AuthenticationTools.GenerateUsername(),
+            Email = googleUserInformationModel.Email,
+            HashedPassword = AuthenticationTools.HashPassword(AuthenticationTools.GenerateUniqueToken()),
+            Image = googleUserInformationModel.Image,
+            EmailConfirmed = true
+        };
+        await _unitOfWork.AccountRepository.AddAsync(account);
+
+        // Add "user" role as default
+        var role = await _unitOfWork.RoleRepository.FindByNameAsync(Role.User.ToString());
+        var accountRole = new AccountRole
+        {
+            Account = account,
+            Role = role!
+        };
+        await _unitOfWork.AccountRoleRepository.AddAsync(accountRole);
+        if (await _unitOfWork.SaveChangeAsync() > 0)
+        {
+            await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
+
+            var tokenModel = await GenerateJwtToken(account);
+            if (tokenModel != null)
+                return new ResponseModel
+                {
+                    Message = "Sign in successfully",
+                    Data = tokenModel
+                };
+
+            return new ResponseModel
+            {
+                Code = StatusCodes.Status500InternalServerError,
+                Message = "Cannot sign in"
+            };
+        }
+
+        return new ResponseModel
+        {
+            Code = StatusCodes.Status500InternalServerError,
+            Message = "Cannot sign in"
         };
     }
 
@@ -406,13 +533,11 @@ public class AccountService : IAccountService
                 var existedUsername =
                     await _unitOfWork.AccountRepository.FindByUsernameAsync(accountSignUpModel.Username);
                 if (existedUsername != null)
-                    accountSignUpModel.Username = AuthenticationTools.GenerateUniqueToken(DateTime.UtcNow)
-                        .Replace("/", string.Empty).Replace("+", string.Empty).Replace("-", string.Empty);
+                    accountSignUpModel.Username = AuthenticationTools.GenerateUsername();
             }
             else
             {
-                accountSignUpModel.Username = AuthenticationTools.GenerateUniqueToken(DateTime.UtcNow)
-                    .Replace("/", string.Empty).Replace("+", string.Empty).Replace("-", string.Empty);
+                accountSignUpModel.Username = AuthenticationTools.GenerateUsername();
             }
 
             var account = _mapper.Map<Account>(accountSignUpModel);
@@ -451,12 +576,12 @@ public class AccountService : IAccountService
             Account? account;
             if (Guid.TryParse(idOrUsername, out var id))
                 account = await _unitOfWork.AccountRepository.GetAsync(id, accounts =>
-                    EntityFrameworkQueryableExtensions.ThenInclude(accounts
-                        .Include(a => a.AccountRoles), accountRole => accountRole.Role));
+                    accounts
+                        .Include(a => a.AccountRoles).ThenInclude(accountRole => accountRole.Role));
             else
                 account = await _unitOfWork.AccountRepository.FindByUsernameAsync(idOrUsername, accounts =>
-                    EntityFrameworkQueryableExtensions.ThenInclude(accounts
-                        .Include(a => a.AccountRoles), accountRole => accountRole.Role));
+                    accounts
+                        .Include(a => a.AccountRoles).ThenInclude(accountRole => accountRole.Role));
 
             if (account == null)
                 return new ResponseModel
@@ -486,8 +611,8 @@ public class AccountService : IAccountService
                 account =>
                     account.IsDeleted == accountFilterModel.IsDeleted &&
                     (!accountFilterModel.Gender.HasValue || account.Gender == accountFilterModel.Gender) &&
-                    (!accountFilterModel.Role.HasValue || Enumerable
-                        .Select(account.AccountRoles, accountRole => accountRole.Role.Name)
+                    (!accountFilterModel.Role.HasValue || account.AccountRoles
+                        .Select(accountRole => accountRole.Role.Name)
                         .Contains(accountFilterModel.Role.ToString())) &&
                     (string.IsNullOrWhiteSpace(accountFilterModel.Search) ||
                      account.FirstName.ToLower().Contains(accountFilterModel.Search.ToLower()) ||
@@ -516,8 +641,8 @@ public class AccountService : IAccountService
                                 : accounts.OrderBy(account => account.CreationDate);
                     }
                 },
-                accounts => EntityFrameworkQueryableExtensions.ThenInclude(
-                    accounts.Include(account => account.AccountRoles), accountRole => accountRole.Role),
+                accounts => accounts.Include(account => account.AccountRoles)
+                    .ThenInclude(accountRole => accountRole.Role),
                 accountFilterModel.PageIndex,
                 accountFilterModel.PageSize
             );

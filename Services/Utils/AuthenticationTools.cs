@@ -22,6 +22,11 @@ public static class AuthenticationTools
         return BCrypt.Net.BCrypt.EnhancedVerify(password, hashedPassword, HashType.SHA256);
     }
 
+    public static string GenerateUsername()
+    {
+        return GenerateUniqueToken().Replace("/", string.Empty).Replace("+", string.Empty).Replace("-", string.Empty);
+    }
+
     public static string GenerateDigitCode(int length)
     {
         const string chars = "0123456789";
@@ -31,9 +36,10 @@ public static class AuthenticationTools
         return code.ToString();
     }
 
-    public static string GenerateUniqueToken(DateTime expiryDateTime)
+    public static string GenerateUniqueToken(DateTime? expiryDateTime = null)
     {
-        var time = BitConverter.GetBytes(expiryDateTime.ToBinary());
+        var validExpiryDateTime = expiryDateTime ?? DateTime.UtcNow;
+        var time = BitConverter.GetBytes(validExpiryDateTime.ToBinary());
         var key = Guid.NewGuid().ToByteArray();
         var token = Convert.ToBase64String(time.Concat(key).ToArray());
 

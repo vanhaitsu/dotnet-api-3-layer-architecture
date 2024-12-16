@@ -105,9 +105,9 @@ public class ConversationService : IConversationService
             };
 
         var conversation = await _unitOfWork.ConversationRepository.FindByAccountIdAndConversationIdAsync(
-            currentUserId.Value, id, conversations => EntityFrameworkQueryableExtensions
-                .ThenInclude(conversations.Include(conversation => conversation.AccountConversations),
-                    accountConversation => accountConversation.Account)
+            currentUserId.Value, id, conversations => conversations
+                .Include(conversation => conversation.AccountConversations)
+                .ThenInclude(accountConversation => accountConversation.Account)
                 .Include(conversation => conversation.AccountConversations).ThenInclude(accountConversation =>
                     accountConversation.MessageRecipients.Where(messageRecipient => !messageRecipient.IsDeleted)
                         .OrderByDescending(messageRecipient => messageRecipient.Message.CreationDate).Take(6))
@@ -140,32 +140,31 @@ public class ConversationService : IConversationService
 
         var conversations = await _unitOfWork.ConversationRepository.GetAllAsync(
             conversation =>
-                Enumerable.Any(conversation.AccountConversations, accountConversation =>
+                conversation.AccountConversations.Any(accountConversation =>
                     accountConversation.AccountId == currentUserId &&
                     (conversationFilterModel.IsArchived == null ||
                      accountConversation.IsArchived == conversationFilterModel.IsArchived) &&
                     !accountConversation.IsDeleted &&
                     accountConversation.MessageRecipients.Any(messageRecipient => !messageRecipient.IsDeleted)) &&
                 (string.IsNullOrWhiteSpace(conversationFilterModel.Search) ||
-                 Enumerable.Any(conversation.AccountConversations, accountConversation =>
+                 conversation.AccountConversations.Any(accountConversation =>
                      accountConversation.Account.FirstName.ToLower()
                          .Contains(conversationFilterModel.Search.ToLower())) ||
-                 Enumerable.Any(conversation.AccountConversations, accountConversation =>
+                 conversation.AccountConversations.Any(accountConversation =>
                      accountConversation.Account.LastName.ToLower()
                          .Contains(conversationFilterModel.Search.ToLower())) ||
-                 Enumerable.Any(conversation.AccountConversations, accountConversation =>
+                 conversation.AccountConversations.Any(accountConversation =>
                      accountConversation.Account.Username.ToLower()
                          .Contains(conversationFilterModel.Search.ToLower())) ||
-                 Enumerable.Any(conversation.AccountConversations, accountConversation =>
+                 conversation.AccountConversations.Any(accountConversation =>
                      accountConversation.Account.Email.ToLower()
                          .Contains(conversationFilterModel.Search.ToLower()))),
             conversations => conversations.OrderByDescending(conversation =>
                 conversation.AccountConversations
                     .First(accountConversation => accountConversation.AccountId == currentUserId).MessageRecipients
                     .Max(messageRecipient => messageRecipient.Message.CreationDate)),
-            conversations => EntityFrameworkQueryableExtensions.ThenInclude(
-                    conversations.Include(conversation => conversation.AccountConversations),
-                    accountConversation => accountConversation.Account)
+            conversations => conversations.Include(conversation => conversation.AccountConversations)
+                .ThenInclude(accountConversation => accountConversation.Account)
                 .Include(conversation => conversation.AccountConversations).ThenInclude(accountConversation =>
                     accountConversation.MessageRecipients.Where(messageRecipient => !messageRecipient.IsDeleted)
                         .OrderByDescending(messageRecipient => messageRecipient.Message.CreationDate).Take(6))
@@ -269,9 +268,9 @@ public class ConversationService : IConversationService
 
         var existedConversation =
             await _unitOfWork.ConversationRepository.FindByAccountIdAndConversationIdAsync(currentUserId.Value,
-                conversationId, conversations => EntityFrameworkQueryableExtensions
-                    .ThenInclude(conversations.Include(conversation => conversation.AccountConversations),
-                        accountConversation => accountConversation.Account)
+                conversationId, conversations => conversations
+                    .Include(conversation => conversation.AccountConversations)
+                    .ThenInclude(accountConversation => accountConversation.Account)
                     .Include(conversation => conversation.AccountConversations).ThenInclude(accountConversation =>
                         accountConversation.MessageRecipients.Where(messageRecipient => !messageRecipient.IsDeleted)
                             .OrderByDescending(messageRecipient => messageRecipient.Message.CreationDate).Take(6))
@@ -342,13 +341,12 @@ public class ConversationService : IConversationService
             };
 
         var messages = await _unitOfWork.MessageRepository.GetAllAsync(
-            message => Enumerable.Any(message.MessageRecipients, messageRecipient =>
+            message => message.MessageRecipients.Any(messageRecipient =>
                 messageRecipient.AccountId == currentUserId &&
                 messageRecipient.AccountConversation.ConversationId == conversationId &&
                 !messageRecipient.IsDeleted),
             messages => messages.OrderByDescending(message => message.CreationDate),
-            messages => EntityFrameworkQueryableExtensions.Include(messages.Include(message => message.CreatedBy),
-                    message => message.MessageRecipients)
+            messages => messages.Include(message => message.CreatedBy).Include(message => message.MessageRecipients)
                 .ThenInclude(messageRecipient => messageRecipient.Account),
             messageFilterModel.PageIndex,
             messageFilterModel.PageSize
@@ -398,16 +396,15 @@ public class ConversationService : IConversationService
                 Code = StatusCodes.Status401Unauthorized,
                 Message = "Unauthorized"
             };
-        
-        await _unitOfWork.MessageRecipientRepository.UpdateIsReadAllByAccountIdAndConversationIdAsync(currentUserId.Value, conversationId);
+
+        await _unitOfWork.MessageRecipientRepository.UpdateIsReadAllByAccountIdAndConversationIdAsync(
+            currentUserId.Value, conversationId);
         if (await _unitOfWork.SaveChangeAsync() > 0)
-        {
             // TODO: Push real time message to update isReadBy...
             return new ResponseModel
             {
                 Message = "Read messages successfully"
             };
-        }
 
         return new ResponseModel
         {

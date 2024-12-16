@@ -32,11 +32,8 @@ public class MessageRecipientRepository : GenericRepository<MessageRecipient>, I
                 messageRecipient.AccountConversation.ConversationId == conversationId && !messageRecipient.IsRead &&
                 !messageRecipient.IsDeleted)
             .ToListAsync();
-        foreach (var messageRecipient in messageRecipients)
-        {
-            messageRecipient.IsRead = true;
-        }
-        
+        foreach (var messageRecipient in messageRecipients) messageRecipient.IsRead = true;
+
         UpdateRange(messageRecipients);
     }
 }

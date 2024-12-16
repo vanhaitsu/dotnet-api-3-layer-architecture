@@ -7,6 +7,7 @@ public interface IAccountService
 {
     Task<ResponseModel> SignUp(AccountSignUpModel accountSignUpModel);
     Task<ResponseModel> SignIn(AccountSignInModel accountSignInModel);
+    Task<ResponseModel> SignInGoogle(string code);
     Task<ResponseModel> RefreshToken(AccountRefreshTokenModel accountRefreshTokenModel);
     Task<ResponseModel> RevokeTokens(AccountEmailModel accountEmailModel);
     Task<ResponseModel> VerifyEmail(string email, string verificationCode);

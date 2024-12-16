@@ -17,9 +17,9 @@ public class MapperProfile : Profile
         CreateMap<Account, AccountModel>()
             .ForMember(dest => dest.Roles,
                 opt => opt.MapFrom(src =>
-                    Enumerable.Select(src.AccountRoles, accountRole => accountRole.Role.Name).Select(Enum.Parse<Role>)))
+                    src.AccountRoles.Select(accountRole => accountRole.Role.Name).Select(Enum.Parse<Role>)))
             .ForMember(dest => dest.RoleNames,
-                opt => opt.MapFrom(src => Enumerable.Select(src.AccountRoles, accountRole => accountRole.Role.Name)));
+                opt => opt.MapFrom(src => src.AccountRoles.Select(accountRole => accountRole.Role.Name)));
         CreateMap<Account, AccountLiteModel>();
         CreateMap<AccountUpdateModel, Account>();
 
