@@ -2,50 +2,64 @@
 
 ## Introduction
 
-This is a simple ASP.NET Core API.
+This is a simple ASP.NET Core API supports authentication, real-time conversations, and messaging.
 
 ## Prerequisites
 
 Before you begin, ensure you have met the following requirements:
 
-- .NET 8 or higher.
-- PostgreSQL is recommended.
+- .NET 9 or highers
+- PostgreSQL
+- Redis
+- Cloudinary
 
 ## Getting Started
 
-- Create and set up your `appsettings.json` inside the API project as following:
+- Set up your `appsettings.json` inside the API project as following:
 
 ```
 {
+  // Your other settings
   "ConnectionStrings": {
-    "LocalDB": "Your local database connection string",
-    "DeployDB": "Your deploy database connection string"
+    "LocalDb": "",
+    "DeployDb": ""
+  },
+  "Redis": {
+    "Configuration": "",
+    "IsEnabled": "true"
+  },
+  "Cloudinary": {
+    "Cloud": "",
+    "ApiKey": "",
+    "ApiSecret": "",
+    "URL": ""
+  },
+  "URL": {
+    "Client": "",
+    "Server": ""
   },
   "JWT": {
-    "ValidAudience": "Your valid audience",
-    "ValidIssuer": "Your valid issuer",
-    "Secret": "Your secret key (more than 256 bits)",
-    "TokenValidityInMinutes": 5,
-    "RefreshTokenValidityInDays": 7
+    "ValidIssuer": "",
+    "ValidAudience": "",
+    "Secret": ""
   },
   "EmailSettings": {
-    "MailServer": "Your mail server",
-    "MailPort": 587,
-    "SenderName": "Your sender name",
-    "FromEmail": "Your from email",
-    "Password": "Your password"
+    "Host": "",
+    "Port": ,
+    "DisplayName": "",
+    "From": "",
+    "Password": ""
   },
   "OAuth2": {
-    "Server": {
-      "RedirectURI": "Your client uri"
-    },
     "Google": {
-      "ClientId": "Your client id",
-      "ClientSecret": "Your client secret"
+      "ClientId": "",
+      "ClientSecret": ""
     }
   }
 }
 ```
+
+- **Add Migration** if needed, then **Update Database** through **Entity Framework Core** and finally you can run the project.
 
 ## References
 

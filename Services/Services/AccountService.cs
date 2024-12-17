@@ -67,8 +67,7 @@ public class AccountService : IAccountService
         }
         else
         {
-            accountSignUpModel.Username = AuthenticationTools.GenerateUniqueToken(DateTime.UtcNow)
-                .Replace("/", string.Empty).Replace("+", string.Empty).Replace("-", string.Empty);
+            accountSignUpModel.Username = AuthenticationTools.GenerateUsername();
         }
 
         var account = _mapper.Map<Account>(accountSignUpModel);
