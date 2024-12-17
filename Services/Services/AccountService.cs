@@ -546,11 +546,14 @@ public class AccountService : IAccountService
 
             var account = _mapper.Map<Account>(accountSignUpModel);
             account.HashedPassword = AuthenticationTools.HashPassword(accountSignUpModel.Password);
-            var rolesOfAccount = roles.Data.Where(role =>
-                accountSignUpModel.Roles.Select(r => r.ToString()).Distinct().Contains(role.Name)).ToList();
-            if (rolesOfAccount.Any())
-                foreach (var role in rolesOfAccount)
-                    account.AccountRoles.Add(new AccountRole { Account = account, Role = role });
+            if (accountSignUpModel.Roles != null && accountSignUpModel.Roles.Any())
+            {
+                var rolesOfAccount = roles.Data.Where(role =>
+                    accountSignUpModel.Roles.Select(r => r.ToString()).Distinct().Contains(role.Name)).ToList();
+                if (rolesOfAccount.Any())
+                    foreach (var role in rolesOfAccount)
+                        account.AccountRoles.Add(new AccountRole { Account = account, Role = role });
+            }
             else
                 account.AccountRoles.Add(new AccountRole { Account = account, Role = userRole! });
 
@@ -558,15 +561,14 @@ public class AccountService : IAccountService
         }
 
         await _unitOfWork.AccountRepository.AddRangeAsync(accounts);
-        var result = await _unitOfWork.SaveChangeAsync();
-        if (result > 0)
+        if (await _unitOfWork.SaveChangeAsync() > 0)
         {
             await _redisHelper.InvalidateCacheByPatternAsync("accounts_*");
 
             return new ResponseModel
             {
                 Code = StatusCodes.Status201Created,
-                Message = $"Add {result / 2} accounts successfully"
+                Message = "Add accounts successfully"
             };
         }
 

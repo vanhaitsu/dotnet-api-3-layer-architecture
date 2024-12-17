@@ -31,5 +31,5 @@ public class AccountSignUpModel
     [Required] [DateOfBirthValidation] public DateOnly DateOfBirth { get; set; }
     [Required] [Phone] [StringLength(15)] public string PhoneNumber { get; set; } = null!;
     public string? Address { get; set; }
-    public List<Role> Roles { get; set; } = null!;
+    public List<Role>? Roles { get; set; } = null!;
 }
