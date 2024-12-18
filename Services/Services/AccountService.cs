@@ -555,7 +555,9 @@ public class AccountService : IAccountService
                         account.AccountRoles.Add(new AccountRole { Account = account, Role = role });
             }
             else
+            {
                 account.AccountRoles.Add(new AccountRole { Account = account, Role = userRole! });
+            }
 
             accounts.Add(account);
         }
