@@ -864,11 +864,14 @@ public class AccountService : IAccountService
         var deviceId = Guid.NewGuid();
         var refreshTokenString =
             AuthenticationTools.GenerateUniqueToken(DateTime.UtcNow.AddDays(Constant.RefreshTokenValidityInDays));
+        var roles = await _unitOfWork.RoleRepository.GetAllByAccountIdAsync(account.Id);
 
         // If refresh token then reuse the claims
         if (refreshToken != null && principal != null)
         {
-            authClaims = principal.Claims.ToList();
+            authClaims = principal.Claims
+                .Where(claim => claim.Type != ClaimTypes.Role && claim.Type != JwtRegisteredClaimNames.Aud).ToList();
+            foreach (var role in roles) authClaims.Add(new Claim(ClaimTypes.Role, role.Name));
             refreshToken.Token = refreshTokenString;
             deviceId = refreshToken.DeviceId;
             _unitOfWork.RefreshTokenRepository.Update(refreshToken);
@@ -881,7 +884,6 @@ public class AccountService : IAccountService
             authClaims.Add(new Claim("accountEmail", account.Email));
             authClaims.Add(new Claim("deviceId", deviceId.ToString()));
             authClaims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
-            var roles = await _unitOfWork.RoleRepository.GetAllByAccountIdAsync(account.Id);
             foreach (var role in roles) authClaims.Add(new Claim(ClaimTypes.Role, role.Name));
             await _unitOfWork.RefreshTokenRepository.AddAsync(new RefreshToken
             {
