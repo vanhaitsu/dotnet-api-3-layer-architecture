@@ -41,7 +41,7 @@ public class AppDbContext : DbContext
             entity.Property(conversation => conversation.Name).HasMaxLength(50);
         });
 
-        modelBuilder.Entity<Message>(entity => { entity.Property(message => message).IsRequired(); });
+        modelBuilder.Entity<Message>(entity => { entity.Property(message => message.CreatedById).IsRequired(); });
 
         modelBuilder.Entity<Role>(entity =>
         {
