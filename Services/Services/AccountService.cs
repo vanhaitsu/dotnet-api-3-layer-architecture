@@ -18,7 +18,6 @@ using Services.Models.AccountModels.OAuth2;
 using Services.Models.ResponseModels;
 using Services.Models.TokenModels;
 using Services.Utils;
-using Account = Repositories.Entities.Account;
 using Role = Repositories.Enums.Role;
 
 namespace Services.Services;
@@ -28,18 +27,18 @@ public class AccountService : IAccountService
     private readonly IClaimService _claimService;
     private readonly ICloudinaryHelper _cloudinaryHelper;
     private readonly IConfiguration _configuration;
-    private readonly IEmailService _emailService;
+    private readonly IEmailHelper _emailHelper;
     private readonly IMapper _mapper;
     private readonly IRedisHelper _redisHelper;
     private readonly IUnitOfWork _unitOfWork;
 
     public AccountService(IClaimService claimService, ICloudinaryHelper cloudinaryHelper, IConfiguration configuration,
-        IEmailService emailService, IMapper mapper, IRedisHelper redisHelper, IUnitOfWork unitOfWork)
+        IEmailHelper emailHelper, IMapper mapper, IRedisHelper redisHelper, IUnitOfWork unitOfWork)
     {
         _claimService = claimService;
         _cloudinaryHelper = cloudinaryHelper;
         _configuration = configuration;
-        _emailService = emailService;
+        _emailHelper = emailHelper;
         _mapper = mapper;
         _redisHelper = redisHelper;
         _unitOfWork = unitOfWork;
@@ -157,8 +156,8 @@ public class AccountService : IAccountService
         ArgumentException.ThrowIfNullOrWhiteSpace(clientId);
         var clientSecret = _configuration["OAuth2:Google:ClientSecret"];
         ArgumentException.ThrowIfNullOrWhiteSpace(clientSecret);
-        var serverUrl = _configuration["URL:Server"];
-        ArgumentException.ThrowIfNullOrWhiteSpace(serverUrl);
+        var redirectUrl = _configuration["URL:Client"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(redirectUrl);
 
         // Exchange authorization code for refresh and access tokens
         // Document: https://developers.google.com/identity/protocols/oauth2/web-server#exchange-authorization-code
@@ -170,7 +169,7 @@ public class AccountService : IAccountService
                 client_secret = clientSecret,
                 code,
                 grant_type = "authorization_code",
-                redirect_uri = $"{serverUrl}/api/v1/authentication/sign-in/google"
+                redirect_uri = redirectUrl
             });
         if (!googleTokenResponse.IsSuccessStatusCode)
             return new ResponseModel
@@ -475,7 +474,7 @@ public class AccountService : IAccountService
         _unitOfWork.AccountRepository.Update(account);
         if (await _unitOfWork.SaveChangeAsync() > 0)
         {
-            await _emailService.SendEmailAsync(account.Email, "Reset your password",
+            await _emailHelper.SendEmailAsync(account.Email, "Reset your password",
                 $"Your token is {resetPasswordToken}. The token will expire in {Constant.ResetPasswordTokenValidityInMinutes} minutes.",
                 true);
 
@@ -853,7 +852,7 @@ public class AccountService : IAccountService
 
     private async Task SendVerificationEmail(Account account)
     {
-        await _emailService.SendEmailAsync(account.Email, "Verify your email",
+        await _emailHelper.SendEmailAsync(account.Email, "Verify your email",
             $"Your verification code is {account.VerificationCode}. The code will expire in {Constant.VerificationCodeValidityInMinutes} minutes.",
             true);
     }

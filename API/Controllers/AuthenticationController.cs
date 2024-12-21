@@ -71,7 +71,7 @@ public class AuthenticationController : ControllerBase
         }
     }
 
-    [HttpPost("token/refresh")]
+    [HttpPost("refresh-token")]
     public async Task<IActionResult> RefreshToken([FromBody] AccountRefreshTokenModel accountRefreshTokenModel)
     {
         try
@@ -112,7 +112,7 @@ public class AuthenticationController : ControllerBase
     }
 
     [Authorize]
-    [HttpPost("token/revoke")]
+    [HttpPost("refresh-token/revoke")]
     public async Task<IActionResult> RevokeTokens([FromBody] AccountEmailModel accountEmailModel)
     {
         try

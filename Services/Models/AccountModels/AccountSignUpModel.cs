@@ -8,7 +8,11 @@ public class AccountSignUpModel
 {
     [Required] [StringLength(50)] public string FirstName { get; set; } = null!;
     [Required] [StringLength(50)] public string LastName { get; set; } = null!;
-    [StringLength(50)] public string? Username { get; set; }
+
+    [StringLength(50)]
+    [RegularExpression(@"^[a-zA-Z0-9_]*$",
+        ErrorMessage = "Username can only contain alphanumeric characters and underscores.")]
+    public string? Username { get; set; }
 
     [Required]
     [EmailAddress]

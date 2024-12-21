@@ -120,10 +120,15 @@ public static class Configuration
         services.AddHttpContextAccessor();
         services.AddAutoMapper(typeof(MapperProfile).Assembly);
         services.AddScoped<IClaimService, ClaimService>();
-        services.AddScoped<IRedisHelper, RedisHelper>();
-        services.AddScoped<ICloudinaryHelper, CloudinaryHelper>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddTransient<IEmailService, EmailService>();
+
+        #endregion
+
+        # region Helper
+
+        services.AddScoped<ICloudinaryHelper, CloudinaryHelper>();
+        services.AddTransient<IEmailHelper, EmailHelper>();
+        services.AddScoped<IRedisHelper, RedisHelper>();
 
         #endregion
 
