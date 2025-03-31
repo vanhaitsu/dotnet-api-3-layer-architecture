@@ -40,6 +40,7 @@ public class RedisHelper : IRedisHelper
             };
             var serializedData = JsonSerializer.Serialize(data, new JsonSerializerOptions
             {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             });
             await _distributedCache.SetStringAsync(cacheKey, serializedData, cacheOptions);
@@ -57,7 +58,10 @@ public class RedisHelper : IRedisHelper
             if (!string.IsNullOrWhiteSpace(cachedData))
                 // If data exists, deserialize and return it
                 // TODO: cachedData is deserialized to ResponseModel but its Data field is still a JSON object
-                return JsonSerializer.Deserialize<T>(cachedData)!;
+                return JsonSerializer.Deserialize<T>(cachedData, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                })!;
         }
 
         // Data not in cache; retrieve data from the provided function
